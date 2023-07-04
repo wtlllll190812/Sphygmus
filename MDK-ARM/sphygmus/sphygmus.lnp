@@ -3,6 +3,7 @@
 "sphygmus\main.o"
 "sphygmus\gpio.o"
 "sphygmus\adc.o"
+"sphygmus\tim.o"
 "sphygmus\usart.o"
 "sphygmus\stm32f1xx_it.o"
 "sphygmus\stm32f1xx_hal_msp.o"
