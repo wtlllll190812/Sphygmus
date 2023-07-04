@@ -70,18 +70,21 @@ void adc_sample()
 {
 		HAL_ADC_Start(&hadc1);
 		HAL_ADC_PollForConversion(&hadc1,10);
-		last_value=adc_value;
-		adc_value=HAL_ADC_GetValue(&hadc1);
+
 }
 
 int check_posiedge()
 {
-	return adc_value>HIGH&&last_value<LOW;
+	if(adc_value>HIGH&&last_value<HIGH)
+		return 1;
+	return 0;
 }
 
 int check_negedge()
 {
-	return adc_value<LOW&&last_value>HIGH;
+	if(adc_value<HIGH&&last_value>HIGH)
+		return 1;
+	return 0;
 }
 
 
@@ -117,7 +120,8 @@ int main(void)
   MX_USART1_UART_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-	
+	HAL_ADCEx_Calibration_Start(&hadc1); 
+	HAL_ADC_Start_IT(&hadc1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -134,19 +138,8 @@ int main(void)
 		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_0,GPIO_PIN_SET);
 		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_1,GPIO_PIN_RESET);
 		HAL_Delay(500);*/
+		HAL_ADC_Start_IT(&hadc1);
 		
-		adc_sample();
-		printf("%d\r\n",adc_value);
-		if(check_posiedge())
-		{
-			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_0,GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_1,GPIO_PIN_SET);
-		}
-		else if(check_negedge())
-		{
-			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_0,GPIO_PIN_SET);
-			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_1,GPIO_PIN_RESET);
-		}
 		HAL_Delay(100);
 	}
   /* USER CODE END 3 */
@@ -196,6 +189,22 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+	if(check_posiedge())
+	{
+		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_0,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_1,GPIO_PIN_SET);
+	}
+	else if(check_negedge())
+	{
+		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_0,GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_1,GPIO_PIN_RESET);
+	}
+	last_value=adc_value;
+	adc_value=HAL_ADC_GetValue(&hadc1);
+	printf("%d\r\n",adc_value);
+}
 /* USER CODE END 4 */
 
 /**
