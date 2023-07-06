@@ -77,12 +77,14 @@ int fputc(int ch,FILE *f)
 	return ch;
 }
 
+
 // adc采样
 void adc_sample()
 {
 		HAL_ADC_Start(&hadc1);
 		HAL_ADC_PollForConversion(&hadc1,10);
 }
+
 
 // 检测上升沿
 int check_posiedge()
@@ -92,6 +94,7 @@ int check_posiedge()
 	return 0;
 }
 
+
 // 检测下降沿
 int check_negedge()
 {
@@ -99,6 +102,8 @@ int check_negedge()
 		return 1;
 	return 0;
 }
+
+
 
 // 求时间间隔平均值
 double average()
@@ -110,6 +115,7 @@ double average()
 	}
 	return (float)sum/LISTSIZE;
 }
+
 
 //向队列中添加新的时间间隔
 void add_delta_time()
@@ -131,6 +137,9 @@ void add_delta_time()
 	delta_time_list[LISTSIZE-1] = delta_time;
 }
 
+
+
+
 //计算心率
 double get_sphygmus()
 {
@@ -140,7 +149,6 @@ double get_sphygmus()
 
 	return sphygmus;
 }
-
 /* USER CODE END 0 */
 
 /**
