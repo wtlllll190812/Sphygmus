@@ -57,6 +57,7 @@ uint32_t l_time;
 uint16_t adc_value;		 // adc采样值
 uint16_t last_value;	 // 上个adc采样值
 uint32_t delta_time_list[LISTSIZE];  // 脉搏间的时间间隔列表
+UART_HandleTypeDef current_uart;
 int alarm;
 /* USER CODE END PV */
 
@@ -71,7 +72,7 @@ void SystemClock_Config(void);
 // 串口输出
 int fputc(int ch,FILE *f)
 {
-	HAL_UART_Transmit(&huart1,(uint8_t*)&ch,1,10);
+	HAL_UART_Transmit(&current_uart,(uint8_t*)&ch,1,10);
 	return ch;
 }
 
@@ -177,6 +178,7 @@ int main(void)
 	HAL_ADC_Start_IT(&hadc1);
 	HAL_TIM_Base_Start_IT(&htim2);
 	HAL_ADCEx_Calibration_Start(&hadc1); 
+	current_uart=huart1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -186,9 +188,10 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+		
 		HAL_ADC_Start_IT(&hadc1);
-//		printf("%f\r\n",get_sphygmus());
-		printf("xxxxx\r\n");
+		printf("%f\r\n",get_sphygmus());
+		//printf("%d\r\n",adc_value);
 
 		HAL_Delay(100);
   }
@@ -244,6 +247,17 @@ void SystemClock_Config(void)
 //adc中断
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
+	/*
+	if(check_posiedge())
+	{
+		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_0,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_1,GPIO_PIN_SET);
+	}
+	else if(check_negedge())
+	{
+		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_0,GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_1,GPIO_PIN_RESET);
+	}*/
 	last_value=adc_value;
 	adc_value=HAL_ADC_GetValue(&hadc1);
 }
@@ -264,7 +278,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 //外部中断
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if((GPIO_Pin&GPIO_PIN_8))
+	if((GPIO_Pin&GPIO_PIN_1))
 	{
 		add_delta_time();
 		l_time=time;
