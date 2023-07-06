@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "i2c.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -37,6 +38,10 @@
 /* USER CODE BEGIN PD */
 #define LOW 1000
 #define HIGH 3000
+#define LISTSIZE 10
+#define MAXTIME 100000
+#define MAXSPHYFMUS 150
+#define MINSPHYFMUS 50
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,9 +52,12 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint16_t adc_value;
-uint16_t last_value;
-int waitLow;
+uint32_t time;				 // 当前时间
+uint32_t l_time;
+uint16_t adc_value;		 // adc采样值
+uint16_t last_value;	 // 上个adc采样值
+uint32_t delta_time_list[LISTSIZE];  // 脉搏间的时间间隔列表
+int alarm;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -69,12 +77,14 @@ int fputc(int ch,FILE *f)
 	return ch;
 }
 
+// adc采样
 void adc_sample()
 {
 		HAL_ADC_Start(&hadc1);
 		HAL_ADC_PollForConversion(&hadc1,10);
 }
 
+// 检测上升沿
 int check_posiedge()
 {
 	if(adc_value>HIGH&&last_value<HIGH)
@@ -82,6 +92,7 @@ int check_posiedge()
 	return 0;
 }
 
+// 检测下降沿
 int check_negedge()
 {
 	if(adc_value<HIGH&&last_value>HIGH)
@@ -89,6 +100,46 @@ int check_negedge()
 	return 0;
 }
 
+// 求时间间隔平均值
+double average()
+{
+	uint32_t sum=0;
+	for(uint8_t i=0;i<LISTSIZE;i++)
+	{
+		sum+=delta_time_list[i];
+	}
+	return (float)sum/LISTSIZE;
+}
+
+//向队列中添加新的时间间隔
+void add_delta_time()
+{
+	uint32_t delta_time;
+	if(time<l_time)
+	{
+		delta_time=MAXTIME-l_time+time;
+	}
+	else
+	{
+		delta_time=time-l_time;
+	}
+	
+	for(int i=0;i<LISTSIZE-1;i++)
+	{
+		delta_time_list[i]=delta_time_list[i+1];
+	}
+	delta_time_list[LISTSIZE-1] = delta_time;
+}
+
+//计算心率
+double get_sphygmus()
+{
+	double avg_time=average();
+	double sphygmus=(double)MAXTIME/avg_time*60;
+	alarm=(sphygmus>MAXSPHYFMUS||sphygmus<MINSPHYFMUS);
+
+	return sphygmus;
+}
 
 /* USER CODE END 0 */
 
@@ -122,13 +173,15 @@ int main(void)
   MX_USART1_UART_Init();
   MX_ADC1_Init();
   MX_TIM3_Init();
+  MX_USART3_UART_Init();
+  MX_I2C1_Init();
 
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
+	HAL_ADC_Start_IT(&hadc1);
 	HAL_TIM_Base_Start_IT(&htim3);
 	HAL_ADCEx_Calibration_Start(&hadc1); 
-	HAL_ADC_Start_IT(&hadc1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -138,7 +191,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		printf("%d\r\n",adc_value);
+		HAL_ADC_Start_IT(&hadc1);
+		printf("%f\r\n",get_sphygmus());
+
 		HAL_Delay(100);
 	}
   /* USER CODE END 3 */
@@ -160,7 +215,9 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -170,17 +227,17 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV2;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV4;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
@@ -199,6 +256,7 @@ static void MX_NVIC_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+//adc中断
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
 	if(check_posiedge())
@@ -215,13 +273,28 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	adc_value=HAL_ADC_GetValue(&hadc1);
 }
 
+
+
+//时钟中断
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 {
-	HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
-	HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_1);
-	HAL_ADC_Start_IT(&hadc1);
+	time++;
+	if(time>MAXTIME)
+	{
+		HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
+		time=0;
+	}
 }	
 
+//外部中断
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if((GPIO_Pin&GPIO_PIN_8))
+	{
+		add_delta_time();
+		l_time=time;
+	}
+}
 /* USER CODE END 4 */
 
 /**
