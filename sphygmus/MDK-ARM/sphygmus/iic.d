@@ -1,0 +1,12 @@
+sphygmus\iic.o: ..\Core\Src\iic.c
+sphygmus\iic.o: ../Core/Inc/iic.h
+sphygmus\iic.o: D:\Drivers\Keil5\ARM\PACK\Keil\STM32F1xx_DFP\2.2.0\Device\Include\stm32f10x.h
+sphygmus\iic.o: .\RTE\_sphygmus\RTE_Components.h
+sphygmus\iic.o: ../Drivers/CMSIS/Include/core_cm3.h
+sphygmus\iic.o: D:\Drivers\Keil5\ARM\ARMCC\Bin\..\include\stdint.h
+sphygmus\iic.o: ../Drivers/CMSIS/Include/cmsis_version.h
+sphygmus\iic.o: ../Drivers/CMSIS/Include/cmsis_compiler.h
+sphygmus\iic.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
+sphygmus\iic.o: D:\Drivers\Keil5\ARM\PACK\Keil\STM32F1xx_DFP\2.2.0\Device\Include\system_stm32f10x.h
+sphygmus\iic.o: ../Core/Inc/io_bit.h
+sphygmus\iic.o: ../Core/Inc/delay.h

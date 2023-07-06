@@ -179,6 +179,9 @@ int main(void)
 	HAL_TIM_Base_Start_IT(&htim2);
 	HAL_ADCEx_Calibration_Start(&hadc1); 
 	current_uart=huart1;
+	
+	
+	 uint8_t i2cbuf[10]={0,1,2,3,4};
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -188,7 +191,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		
+		HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
 		HAL_ADC_Start_IT(&hadc1);
 		printf("%f\r\n",get_sphygmus());
 		//printf("%d\r\n",adc_value);
