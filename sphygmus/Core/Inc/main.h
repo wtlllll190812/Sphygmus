@@ -54,6 +54,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+void delay_us(uint32_t delta);
 
 /* USER CODE END EFP */
 

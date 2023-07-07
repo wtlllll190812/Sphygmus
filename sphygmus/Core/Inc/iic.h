@@ -3,16 +3,16 @@
 
 #include "main.h"
 #include "io_bit.h"
-#include "delay.h"
+//#include "delay.h"
 
 #define IIC_GPIO_RCC RCC_APB2Periph_GPIOB
 #define IIC_GPIO GPIOB
-#define IIC_SCL_PIN GPIO_PIN_7
-#define IIC_SDA_PIN GPIO_PIN_6
+#define IIC_SCL_PIN GPIO_PIN_6
+#define IIC_SDA_PIN GPIO_PIN_7
 
-#define IIC_SCL PBout(7)
-#define IIC_SDA PBout(6)
-#define IIC_SDA_IN PBin(6)
+#define IIC_SCL PBout(6)
+#define IIC_SDA PBout(7)
+#define IIC_SDA_IN PBin(7)
 
 void IIC_Pin_Init(void);
 

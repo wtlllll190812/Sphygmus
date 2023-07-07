@@ -26,11 +26,13 @@ sphygmus\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc.h
 sphygmus\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc_ex.h
 sphygmus\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h
 sphygmus\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h
+sphygmus\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h
 sphygmus\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 sphygmus\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 sphygmus\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 sphygmus\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 sphygmus\main.o: ../Core/Inc/adc.h
+sphygmus\main.o: ../Core/Inc/i2c.h
 sphygmus\main.o: ../Core/Inc/tim.h
 sphygmus\main.o: ../Core/Inc/usart.h
 sphygmus\main.o: ../Core/Inc/gpio.h
@@ -38,5 +40,4 @@ sphygmus\main.o: D:\Drivers\Keil5\ARM\ARMCC\Bin\..\include\stdio.h
 sphygmus\main.o: ../Core/Inc/oled.h
 sphygmus\main.o: ../Core/Inc/iic.h
 sphygmus\main.o: ../Core/Inc/io_bit.h
-sphygmus\main.o: ../Core/Inc/delay.h
 sphygmus\main.o: ../Core/Inc/font.h

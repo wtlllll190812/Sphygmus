@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "i2c.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -27,7 +28,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "oled.h"
-#include "delay.h"
+//#include "delay.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,7 +41,7 @@
 #define LOW 1000
 #define HIGH 3000
 #define LISTSIZE 10
-#define MAXTIME 100000
+#define MAXTIME 1000000
 #define MAXSPHYFMUS 150
 #define MINSPHYFMUS 50
 /* USER CODE END PD */
@@ -70,6 +71,19 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+void delay_us(uint32_t delta)
+{
+	uint32_t t=time;
+	while(1)
+	{
+		if(time-t>delta||(time<t&&MAXTIME-t+time>delta))
+		{
+			break;
+		}
+	}
+}
+
 // 串口输出
 int fputc(int ch,FILE *f)
 {
@@ -149,18 +163,6 @@ double get_sphygmus()
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	char buf[] = {"To be or not to"};
-	char buf1[] = {" be.That is a"};
-	char buf2[] = {"question."};
-
-	Sys_Delay_Init();
-	Oled_Init();
-	Oled_Display_Char(0, 0, 'A'); // ??????????
-
-	// There is no luck.There is only work.???????????g?U?????????????
-	Oled_Display_String(0, 0, buf);	 // ????????
-	Oled_Display_String(2, 0, buf1); // ????????
-	Oled_Display_String(4, 0, buf2); // ????????
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -185,13 +187,25 @@ int main(void)
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 	HAL_ADC_Start_IT(&hadc1);
 	HAL_TIM_Base_Start_IT(&htim2);
 	HAL_ADCEx_Calibration_Start(&hadc1); 
 	current_uart=huart1;
 	
-	
+	char buf[] = {"To be or not to"};
+	char buf1[] = {" be.That is a"};
+	char buf2[] = {"question."};
+
+	//Sys_Delay_Init();
+	Oled_Init();
+	Oled_Display_Char(0, 0, 'A'); // ??????????
+
+	// There is no luck.There is only work.???????????g?U?????????????
+	Oled_Display_String(0, 0, buf);	 // ????????
+	Oled_Display_String(2, 0, buf1); // ????????
+	Oled_Display_String(4, 0, buf2); // ????????
 	 uint8_t i2cbuf[10]={0,1,2,3,4};
   /* USER CODE END 2 */
 
@@ -202,20 +216,19 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		Sys_Delay_Init();
-		Oled_Init();
+		/*Oled_Init();
 		OLED_Clear(0x00);
 		Oled_Display_String(0, 0, buf);	 // ????????
 		Oled_Display_String(2, 0, buf1); // ????????
 		Oled_Display_String(4, 0, buf2); // ????????
-		
+		*/
 		
 //		HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
-	//	HAL_ADC_Start_IT(&hadc1);
+		//HAL_ADC_Start_IT(&hadc1);
 	//	printf("%f\r\n",get_sphygmus());
-		//printf("%d\r\n",adc_value);
-
-		HAL_Delay(5000);
+		printf("sssss\r\n");
+	
+		HAL_Delay(100);
   }
   /* USER CODE END 3 */
 }
@@ -272,8 +285,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	last_value=adc_value;
 	adc_value=HAL_ADC_GetValue(&hadc1);
 }
-
-
 
 //时钟中断
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
