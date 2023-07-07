@@ -14,23 +14,21 @@
 ********************************************************************************/
 void IIC_Pin_Init(void)
 {
-	/*
 	GPIO_InitTypeDef GPIO_InitStruct;
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
-	RCC_APB2PeriphClockCmd(IIC_GPIO_RCC, ENABLE);
 
 	// SCL
-	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_InitStruct.GPIO_Pin = IIC_SCL_PIN;
-	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(IIC_GPIO, &GPIO_InitStruct);
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pin = IIC_SCL_PIN;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	HAL_GPIO_Init(IIC_GPIO, &GPIO_InitStruct);
 
 	// SDA
-	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_OD;
-	GPIO_InitStruct.GPIO_Pin = IIC_SDA_PIN;
-	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(IIC_GPIO, &GPIO_InitStruct);
-	*/
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pin = IIC_SDA_PIN;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	HAL_GPIO_Init(IIC_GPIO, &GPIO_InitStruct);
 }
 
 /*******************************************************************************

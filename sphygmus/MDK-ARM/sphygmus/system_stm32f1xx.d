@@ -1,4 +1,4 @@
-sphygmus\system_stm32f1xx.o: ..\Core\Src\system_stm32f1xx.c
+sphygmus\system_stm32f1xx.o: ../Core/Src/system_stm32f1xx.c
 sphygmus\system_stm32f1xx.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h
 sphygmus\system_stm32f1xx.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h
 sphygmus\system_stm32f1xx.o: ../Drivers/CMSIS/Include/core_cm3.h
@@ -25,7 +25,6 @@ sphygmus\system_stm32f1xx.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_a
 sphygmus\system_stm32f1xx.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_adc_ex.h
 sphygmus\system_stm32f1xx.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h
 sphygmus\system_stm32f1xx.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h
-sphygmus\system_stm32f1xx.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h
 sphygmus\system_stm32f1xx.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 sphygmus\system_stm32f1xx.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 sphygmus\system_stm32f1xx.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h

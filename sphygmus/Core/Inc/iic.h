@@ -7,8 +7,8 @@
 
 #define IIC_GPIO_RCC RCC_APB2Periph_GPIOB
 #define IIC_GPIO GPIOB
-#define IIC_SCL_PIN GPIO_Pin_7
-#define IIC_SDA_PIN GPIO_Pin_6
+#define IIC_SCL_PIN GPIO_PIN_7
+#define IIC_SDA_PIN GPIO_PIN_6
 
 #define IIC_SCL PBout(7)
 #define IIC_SDA PBout(6)

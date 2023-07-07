@@ -19,7 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
-#include "i2c.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -28,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "oled.h"
+#include "delay.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -153,12 +153,14 @@ int main(void)
 	char buf1[] = {" be.That is a"};
 	char buf2[] = {"question."};
 
+	Sys_Delay_Init();
 	Oled_Init();
-	Oled_Display_Char(0, 0, 'A'); 
+	Oled_Display_Char(0, 0, 'A'); // ??????????
 
-	Oled_Display_String(0, 0, buf);	
-	Oled_Display_String(2, 0, buf1);
-	Oled_Display_String(4, 0, buf2); 
+	// There is no luck.There is only work.???????????g?U?????????????
+	Oled_Display_String(0, 0, buf);	 // ????????
+	Oled_Display_String(2, 0, buf1); // ????????
+	Oled_Display_String(4, 0, buf2); // ????????
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -180,7 +182,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_ADC1_Init();
-  MX_I2C1_Init();
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
@@ -201,12 +202,20 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
-		HAL_ADC_Start_IT(&hadc1);
-		printf("%f\r\n",get_sphygmus());
+		Sys_Delay_Init();
+		Oled_Init();
+		OLED_Clear(0x00);
+		Oled_Display_String(0, 0, buf);	 // ????????
+		Oled_Display_String(2, 0, buf1); // ????????
+		Oled_Display_String(4, 0, buf2); // ????????
+		
+		
+//		HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
+	//	HAL_ADC_Start_IT(&hadc1);
+	//	printf("%f\r\n",get_sphygmus());
 		//printf("%d\r\n",adc_value);
 
-		HAL_Delay(100);
+		HAL_Delay(5000);
   }
   /* USER CODE END 3 */
 }
