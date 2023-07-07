@@ -45,9 +45,9 @@ void IIC_Start(void)
 {
 	IIC_SCL = 1;
 	IIC_SDA = 1;
-	delay_us(5);
+	delay_us(1);
 	IIC_SDA = 0;
-	delay_us(5);
+	delay_us(1);
 	IIC_SCL = 0;
 }
 
@@ -67,9 +67,9 @@ void IIC_Stop(void)
 	//	IIC_SDA = 0;
 
 	IIC_SDA = 1;
-	delay_us(5);
+	delay_us(1);
 	IIC_SCL = 1;
-	delay_us(5);
+	delay_us(1);
 	IIC_SDA = 0;
 }
 
@@ -90,9 +90,9 @@ void IIC_Send_Ack(u8 ack)
 	// 为什么应答信号与非应答信号可以在一个函数中？？
 	// 它们时钟信号相同，数据信号的初始电平不同？？  分开写
 
-	delay_us(5);
+	delay_us(1);
 	IIC_SCL = 0;
-	delay_us(5);
+	delay_us(1);
 
 	if (ack)
 	{
@@ -103,10 +103,10 @@ void IIC_Send_Ack(u8 ack)
 		IIC_SDA = 0;
 	}
 
-	delay_us(5);
+	delay_us(1);
 	// 保持周期完整性
 	IIC_SCL = 1;
-	delay_us(5);
+	delay_us(1);
 	IIC_SCL = 0;
 }
 
@@ -125,10 +125,10 @@ void IIC_Send_Ack(u8 ack)
 u8 IIC_Reception_Ack(void)
 {
 	IIC_SDA = 1;
-	delay_us(5);
+	delay_us(1);
 	//----
 	IIC_SCL = 0;
-	delay_us(5);
+	delay_us(1);
 	IIC_SCL = 1;
 
 	if (IIC_SDA_IN)
@@ -173,10 +173,10 @@ u8 IIC_Send_Data(u8 data)
 			IIC_SDA = 0;
 		}
 		data <<= 1;
-		delay_us(5);
+		delay_us(1);
 		// 保持周期完整性
 		IIC_SCL = 1;
-		delay_us(5);
+		delay_us(1);
 		//		IIC_SCL = 0;
 	}
 
@@ -206,7 +206,7 @@ u8 IIC_Read_Data(void)
 	for (i = 0; i < 8; i++)
 	{
 		IIC_SCL = 0;
-		delay_us(5);
+		delay_us(1);
 		IIC_SCL = 1;
 
 		if (IIC_SDA_IN)

@@ -35,3 +35,4 @@ sphygmus\oled.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 sphygmus\oled.o: ../Core/Inc/iic.h
 sphygmus\oled.o: ../Core/Inc/io_bit.h
 sphygmus\oled.o: ../Core/Inc/font.h
+sphygmus\oled.o: ../Core/Inc/i2c.h

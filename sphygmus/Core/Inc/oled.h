@@ -4,6 +4,7 @@
 #include "main.h"
 #include "iic.h"
 #include "font.h"
+#include "i2c.h"
 
 void OLED_Send_Command(u8 com);
 void Oled_Write_Data(u8 data);

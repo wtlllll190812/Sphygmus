@@ -13,11 +13,15 @@
 ********************************************************************************/
 void OLED_Send_Command(u8 com)
 {
-	IIC_Start();
-	IIC_Send_Data(0x78); // 地址，见PDF规格书19页/59
-	IIC_Send_Data(0x00); // 写指令 第6位控制写数据/命令，见PDF规格书20页/59中间的图，0x00是写命令，0x40是写数据  Figure 8-7 : I2C-bus data format
-	IIC_Send_Data(com);	 // 指令，
-	IIC_Stop();
+	//IIC_Start();
+	uint8_t device_addr=0x78;
+	uint8_t command_addr=0x00;
+
+	//HAL_I2C_Master_Transmit(&hi2c1,0x78,&device_addr,8,10);
+	HAL_I2C_Master_Transmit(&hi2c1,0x78,&command_addr,8,10);
+	HAL_I2C_Master_Transmit(&hi2c1,0x78,&com,8,10);
+
+	//IIC_Stop();
 }
 
 /*******************************************************************************
@@ -33,11 +37,15 @@ void OLED_Send_Command(u8 com)
 ********************************************************************************/
 void Oled_Write_Data(u8 data)
 {
-	IIC_Start();
-	IIC_Send_Data(0x78); // 地址
-	IIC_Send_Data(0x40); // 写数据
-	IIC_Send_Data(data); // 指令
-	IIC_Stop();
+//	IIC_Start();
+	
+	uint8_t device_addr=0x78;
+	uint8_t command_addr=0x40;
+
+	//HAL_I2C_Master_Transmit(&hi2c1,0x78,&device_addr,8,10);
+	HAL_I2C_Master_Transmit(&hi2c1,0x78,&command_addr,8,10);
+	HAL_I2C_Master_Transmit(&hi2c1,0x78,&data,8,10);
+	//IIC_Stop();
 }
 
 /*******************************************************************************

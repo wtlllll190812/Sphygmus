@@ -196,11 +196,13 @@ int main(void)
 	char buf[] = {"To be or not to"};
 	char buf1[] = {" be.That is a"};
 	char buf2[] = {"question."};
+	Oled_Init();
 
 	//Sys_Delay_Init();
-	Oled_Display_String(0, 0, buf);
+	/*Oled_Display_String(0, 0, buf);
 	Oled_Display_String(2, 0, buf1);
 	Oled_Display_String(4, 0, buf2);
+	*/
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -210,13 +212,10 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		Oled_Init();
-		Oled_Display_Pic(36, 36, 0, 20, heart_small);
-		HAL_Delay(100);
-
+		OLED_Clear(0x00);
+		Oled_Display_Pic(36, 36, 1, 27, heart_small);
 		Oled_Display_Pic(50, 50, 0, 20, heart_large);
-		HAL_Delay(100);
-		
+
 //		HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
 		//HAL_ADC_Start_IT(&hadc1);
 	//	printf("%f\r\n",get_sphygmus());
