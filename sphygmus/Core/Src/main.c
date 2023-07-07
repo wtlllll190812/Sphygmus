@@ -28,7 +28,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "oled.h"
-//#include "delay.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,7 +41,7 @@
 #define LOW 1000
 #define HIGH 3000
 #define LISTSIZE 10
-#define MAXTIME 1000000
+#define MAXTIME 100000
 #define MAXSPHYFMUS 150
 #define MINSPHYFMUS 50
 /* USER CODE END PD */
@@ -72,16 +72,14 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void delay_us(uint32_t delta)
+void delay_us(uint32_t nus)
 {
-	uint32_t t=time;
-	while(1)
+	__HAL_TIM_SET_COUNTER(&htim2, 0);
+	__HAL_TIM_ENABLE(&htim2);
+	while (__HAL_TIM_GET_COUNTER(&htim2) < nus)
 	{
-		if(time-t>delta||(time<t&&MAXTIME-t+time>delta))
-		{
-			break;
-		}
 	}
+	__HAL_TIM_DISABLE(&htim2);
 }
 
 // ´®¿ÚÊä³ö
@@ -188,6 +186,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_I2C1_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 	HAL_ADC_Start_IT(&hadc1);
 	HAL_TIM_Base_Start_IT(&htim2);
@@ -199,14 +198,7 @@ int main(void)
 	char buf2[] = {"question."};
 
 	//Sys_Delay_Init();
-	Oled_Init();
-	Oled_Display_Char(0, 0, 'A'); // ??????????
-
-	// There is no luck.There is only work.???????????g?U?????????????
-	Oled_Display_String(0, 0, buf);	 // ????????
-	Oled_Display_String(2, 0, buf1); // ????????
-	Oled_Display_String(4, 0, buf2); // ????????
-	 uint8_t i2cbuf[10]={0,1,2,3,4};
+	
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -226,9 +218,9 @@ int main(void)
 //		HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
 		//HAL_ADC_Start_IT(&hadc1);
 	//	printf("%f\r\n",get_sphygmus());
-		printf("sssss\r\n");
+		printf("%d\r\n",time);
 	
-		HAL_Delay(100);
+		delay_us(100000);
   }
   /* USER CODE END 3 */
 }
