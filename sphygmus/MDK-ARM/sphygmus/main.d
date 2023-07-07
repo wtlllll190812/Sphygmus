@@ -37,3 +37,8 @@ sphygmus\main.o: ../Core/Inc/tim.h
 sphygmus\main.o: ../Core/Inc/usart.h
 sphygmus\main.o: ../Core/Inc/gpio.h
 sphygmus\main.o: D:\Drivers\Keil5\ARM\ARMCC\Bin\..\include\stdio.h
+sphygmus\main.o: ../Core/Inc/oled.h
+sphygmus\main.o: ../Core/Inc/iic.h
+sphygmus\main.o: ../Core/Inc/io_bit.h
+sphygmus\main.o: ../Core/Inc/delay.h
+sphygmus\main.o: ../Core/Inc/font.h

@@ -27,6 +27,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "oled.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -148,7 +149,16 @@ double get_sphygmus()
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+	char buf[] = {"To be or not to"};
+	char buf1[] = {" be.That is a"};
+	char buf2[] = {"question."};
 
+	Oled_Init();
+	Oled_Display_Char(0, 0, 'A'); 
+
+	Oled_Display_String(0, 0, buf);	
+	Oled_Display_String(2, 0, buf1);
+	Oled_Display_String(4, 0, buf2); 
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -250,17 +260,6 @@ void SystemClock_Config(void)
 //adc÷–∂œ
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
-	/*
-	if(check_posiedge())
-	{
-		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_0,GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_1,GPIO_PIN_SET);
-	}
-	else if(check_negedge())
-	{
-		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_0,GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_1,GPIO_PIN_RESET);
-	}*/
 	last_value=adc_value;
 	adc_value=HAL_ADC_GetValue(&hadc1);
 }

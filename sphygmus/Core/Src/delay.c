@@ -13,14 +13,15 @@
 ********************************************************************************/
 void Sys_Delay_Init(void)
 {
-	if(SysTick_Config(72) == 1)//1Œ¢√Î
+	if (SysTick_Config(72) == 1) // 1Œ¢√Î
 	{
-		while(1);
+		while (1)
+			;
 	}
 }
 
 u32 sys_time = 0;
-void SysTick_Handler(void)
+void m_SysTick_Handler(void)
 {
 	sys_time++;
 }
@@ -40,7 +41,8 @@ void SysTick_Handler(void)
 void delay_us(u32 us)
 {
 	sys_time = 0;
-	while(sys_time != us);
+	while (sys_time != us)
+		;
 }
 
 /*******************************************************************************
@@ -57,6 +59,5 @@ void delay_us(u32 us)
 ********************************************************************************/
 void delay_ms(u32 ms)
 {
-	delay_us(ms*1000);
+	delay_us(ms * 1000);
 }
-

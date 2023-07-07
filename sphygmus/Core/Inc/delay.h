@@ -1,8 +1,7 @@
 #ifndef _DELAY_H
 #define _DELAY_H
 
-#include "stm32f10x.h"
-
+#include "main.h"
 
 void Sys_Delay_Init(void);
 void delay_us(u32 us);
