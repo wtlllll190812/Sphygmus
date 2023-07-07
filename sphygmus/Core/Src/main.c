@@ -189,7 +189,7 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 	HAL_ADC_Start_IT(&hadc1);
-	HAL_TIM_Base_Start_IT(&htim2);
+	HAL_TIM_Base_Start_IT(&htim1);
 	HAL_ADCEx_Calibration_Start(&hadc1); 
 	current_uart=huart1;
 	
@@ -198,7 +198,9 @@ int main(void)
 	char buf2[] = {"question."};
 
 	//Sys_Delay_Init();
-	
+	Oled_Display_String(0, 0, buf);
+	Oled_Display_String(2, 0, buf1);
+	Oled_Display_String(4, 0, buf2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -208,19 +210,17 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		/*Oled_Init();
-		OLED_Clear(0x00);
-		Oled_Display_String(0, 0, buf);	 // ????????
-		Oled_Display_String(2, 0, buf1); // ????????
-		Oled_Display_String(4, 0, buf2); // ????????
-		*/
+		Oled_Init();
+		Oled_Display_Pic(36, 36, 0, 20, heart_small);
+		HAL_Delay(100);
+
+		Oled_Display_Pic(50, 50, 0, 20, heart_large);
+		HAL_Delay(100);
 		
 //		HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
 		//HAL_ADC_Start_IT(&hadc1);
 	//	printf("%f\r\n",get_sphygmus());
 		printf("%d\r\n",time);
-	
-		delay_us(100000);
   }
   /* USER CODE END 3 */
 }

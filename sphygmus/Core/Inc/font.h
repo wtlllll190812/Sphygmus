@@ -4,7 +4,7 @@
 #include "main.h"
 extern const u8 Aciss_8X16[];
 
-extern u8 pic[];
-extern u8 chain[];
+extern u8 heart_large[];
+extern u8 heart_small[];
 
 #endif
