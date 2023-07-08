@@ -1,24 +1,25 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2023 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "i2c.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -53,13 +54,13 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint32_t time;				 // µ±Ç°Ê±¼ä
-uint32_t l_time;			 // ÉÏ´ÎĞÄÌøÊ±¼ä
-uint16_t adc_value;		 // adc²ÉÑùÖµ
-uint16_t last_value;	 // ÉÏ¸öadc²ÉÑùÖµ
-uint32_t delta_time_list[LISTSIZE];  // Âö²«¼äµÄÊ±¼ä¼ä¸ôÁĞ±í
-UART_HandleTypeDef current_uart;
-int alarm;
+uint32_t time;                      // å½“å‰æ—¶é—´
+uint32_t l_time;                    // ä¸Šæ¬¡å¿ƒè·³æ—¶é—´
+uint16_t adc_value;                 // adcé‡‡æ ·å€¼
+uint16_t last_value;                // ä¸Šä¸ªadcé‡‡æ ·å€¼
+uint32_t delta_time_list[LISTSIZE]; // è„‰æé—´çš„æ—¶é—´é—´éš”åˆ—è¡¨
+UART_HandleTypeDef current_uart;    // å½“å‰ä½¿ç”¨çš„ä¸²å£
+int alarm;                          // æŠ¥è­¦æ ‡å¿—
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -70,157 +71,152 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-// Î¢ÃëÑÓÊ±
+// å¾®å¦™çº§å»¶æ—¶
 void delay_us(uint32_t nus)
 {
-	__HAL_TIM_SET_COUNTER(&htim2, 0);
-	__HAL_TIM_ENABLE(&htim2);
-	while (__HAL_TIM_GET_COUNTER(&htim2) < nus)
-	{
-	}
-	__HAL_TIM_DISABLE(&htim2);
+  __HAL_TIM_SET_COUNTER(&htim2, 0);
+  __HAL_TIM_ENABLE(&htim2);
+  while (__HAL_TIM_GET_COUNTER(&htim2) < nus)
+  {
+  }
+  __HAL_TIM_DISABLE(&htim2);
 }
 
-// ´®¿ÚÊä³ö
-int fputc(int ch,FILE *f)
+// è¾“å‡º
+int fputc(int ch, FILE *f)
 {
-	HAL_UART_Transmit(&current_uart,(uint8_t*)&ch,1,10);
-	//HAL_UART_Transmit(&huart2,(uint8_t*)&ch,1,10);
-	return ch;
+  HAL_UART_Transmit(&current_uart, (uint8_t *)&ch, 1, 10);
+  return ch;
 }
 
-// adc²ÉÑù
+// adcé‡‡æ ·
 void adc_sample()
 {
-		HAL_ADC_Start(&hadc1);
-		HAL_ADC_PollForConversion(&hadc1,10);
+  HAL_ADC_Start(&hadc1);
+  HAL_ADC_PollForConversion(&hadc1, 10);
 }
 
-// ¼ì²âÉÏÉıÑØ
+// ä¸Šè¾¹æ²¿æ£€æµ‹
 int check_posiedge()
 {
-	if(adc_value>HIGH&&last_value<HIGH)
-		return 1;
-	return 0;
+  if (adc_value > HIGH && last_value < HIGH)
+    return 1;
+  return 0;
 }
 
-// ¼ì²âÏÂ½µÑØ
+// ä¸‹è¾¹æ²¿æ£€æµ‹
 int check_negedge()
 {
-	if(adc_value<HIGH&&last_value>HIGH)
-		return 1;
-	return 0;
+  if (adc_value < HIGH && last_value > HIGH)
+    return 1;
+  return 0;
 }
 
-// ÇóÊ±¼ä¼ä¸ôÆ½¾ùÖµ
+// è„‰æé—´éš”å¹³å‡å€¼
 double average()
 {
-	uint32_t sum=0;
-	for(uint8_t i=0;i<LISTSIZE;i++)
-	{
-		sum+=delta_time_list[i];
-	}
-
-	return (float)sum/LISTSIZE;
+  uint32_t sum = 0;
+  for (uint8_t i = 0; i < LISTSIZE; i++)
+  {
+    sum += delta_time_list[i];
+  }
+  return (float)sum / LISTSIZE;
 }
 
-//Ïò¶ÓÁĞÖĞÌí¼ÓĞÂµÄÊ±¼ä¼ä¸ô
+// æ·»åŠ æ—¶é—´é—´éš”
 void add_delta_time()
 {
-	uint32_t delta_time;
+  uint32_t delta_time;
+  if (time < l_time)
+  {
+    delta_time = MAXTIME - l_time + time;
+  }
+  else
+  {
+    delta_time = time - l_time;
+  }
 
-	if(time<l_time)
-	{
-		delta_time=MAXTIME-l_time+time;
-	}
-	else
-	{
-		delta_time=time-l_time;
-	}
-	
-	for(int i=0;i<LISTSIZE-1;i++)
-	{
-		delta_time_list[i]=delta_time_list[i+1];
-	}
-
-	delta_time_list[LISTSIZE-1] = delta_time;
+  for (int i = 0; i < LISTSIZE - 1; i++)
+  {
+    delta_time_list[i] = delta_time_list[i + 1];
+  }
+  delta_time_list[LISTSIZE - 1] = delta_time;
 }
 
-//¼ÆËãĞÄÂÊ
+// è·å–è„‰æ
 double get_sphygmus()
 {
-	double avg_time=average();
-	double sphygmus=(double)MAXTIME/avg_time*60;
-	alarm=(sphygmus>MAXSPHYFMUS||sphygmus<MINSPHYFMUS);
+  double avg_time = average();
+  double sphygmus = (double)MAXTIME / avg_time * 60;
+  alarm = (sphygmus > MAXSPHYFMUS || sphygmus < MINSPHYFMUS);
 
-	return sphygmus;
+  return sphygmus;
 }
 
-//Êı×Ö×ª»»Îª×Ö·û´®
-char* to_string(double num,char* str,int size,int radix)
+// æ•°å­—è½¬æ¢ä¸ºå­—ç¬¦ä¸²
+char *to_string(double num, char *str, int size, int radix)
 {
-    static char index[]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.";
-		
-    unsigned unum;
-    int i=0,j,k;
- 
-    if(radix==10&&num<0)
-    {
-        unum=(unsigned)-num;
-        str[i++]='-';
-    }
-    else unum=(unsigned)num;
- 
-		
-    do
-    {
-        str[i++]=index[unum%(unsigned)radix];
-        unum/=radix;
- 
-    }while(unum);
-		for(;i<size-1;i++)
-		{
-			str[i]=' ';
-		}
-		
-    str[i]='\0';
- 
+  static char index[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.";
 
-    if(str[0]=='-') k=1;
-    else k=0;
- 
-    char temp;
-    for(j=k;j<=(i-1)/2;j++)
-    {
-        temp=str[j];
-        str[j]=str[i-1+k-j];
-        str[i-1+k-j]=temp;
-    }
- 
-    return str;
- 
+  unsigned unum;
+  int i = 0, j, k;
+
+  if (radix == 10 && num < 0)
+  {
+    unum = (unsigned)-num;
+    str[i++] = '-';
+  }
+  else
+    unum = (unsigned)num;
+
+  do
+  {
+    str[i++] = index[unum % (unsigned)radix];
+    unum /= radix;
+
+  } while (unum);
+  for (; i < size - 1; i++)
+  {
+    str[i] = ' ';
+  }
+
+  str[i] = '\0';
+
+  if (str[0] == '-')
+    k = 1;
+  else
+    k = 0;
+
+  char temp;
+  for (j = k; j <= (i - 1) / 2; j++)
+  {
+    temp = str[j];
+    str[j] = str[i - 1 + k - j];
+    str[i - 1 + k - j] = temp;
+  }
+
+  return str;
 }
 
-//oledÏÔÊ¾
+// oledæ˜¾ç¤º
 void display()
 {
-	static char buf[] = {"rate: "};
+  static char buf[] = {"rate: "};
   static char sphygmus[5];
 
-	Oled_Display_String(0,80,buf);
-	Oled_Display_String(12,80,to_string(get_sphygmus(),sphygmus,5,10));
+  Oled_Display_String(0, 80, buf);
+  Oled_Display_String(12, 80, to_string(get_sphygmus(), sphygmus, 5, 10));
 
-	Oled_Display_Pic(50, 50, 0, 15, heart_small);
-	HAL_Delay(10);
-	Oled_Display_Pic(50, 50, 0, 15, heart_large);
+  Oled_Display_Pic(50, 50, 0, 15, heart_small);
+  HAL_Delay(10);
+  Oled_Display_Pic(50, 50, 0, 15, heart_large);
 }
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -248,21 +244,16 @@ int main(void)
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
+  MX_I2C1_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-	HAL_ADC_Start_IT(&hadc1);
-	HAL_TIM_Base_Start_IT(&htim1);
-	HAL_ADCEx_Calibration_Start(&hadc1); 
-	current_uart=huart1;
-	
-	//char buf1[] = {" be.That is a"};
-	//char buf2[] = {"question."};
+  HAL_ADC_Start_IT(&hadc1);
+  HAL_TIM_Base_Start_IT(&htim1);
+  HAL_ADCEx_Calibration_Start(&hadc1);
+  current_uart = huart1;
 
-	//Sys_Delay_Init();
-	Oled_Init();
-	/*Oled_Display_String(0, 0, buf);
-	Oled_Display_String(2, 0, buf1);
-	Oled_Display_String(4, 0, buf2);*/
+  Oled_Init();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -272,24 +263,20 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		HAL_ADC_Start_IT(&hadc1);
-		
-		//OLED_Clear(0x00);
-		display();
-		printf("%f\r\n",get_sphygmus());
-		//HAL_Delay(100);
+    display();
+    HAL_Delay(100);
 
-		//HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
-		//printf("%d\r\n",time);
-
+    printf("%f\r\n", get_sphygmus());
+    // HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
+    // printf("%d\r\n", time);
   }
   /* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -297,8 +284,8 @@ void SystemClock_Config(void)
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -311,9 +298,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -332,42 +318,40 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-//adcÖĞ¶Ï
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+// adc????
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-	last_value=adc_value;
-	adc_value=HAL_ADC_GetValue(&hadc1);
-	current_uart=huart1;
-	printf("%d/r/n",adc_value);
-	HAL_ADC_Start_IT(&hadc1);
+  last_value = adc_value;
+  adc_value = HAL_ADC_GetValue(&hadc1);
 }
 
-//Ê±ÖÓÖĞ¶Ï
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
+// ?Â±??????
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	time++;
-	if(time>MAXTIME)
-	{
-		time=0;
-	}
-}	
+  time++;
+  if (time > MAXTIME)
+  {
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0);
+    time = 0;
+  }
+}
 
-//Íâ²¿ÖĞ¶Ï
+// ????????
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if((GPIO_Pin&GPIO_PIN_1))
-	{
-		add_delta_time();
-		l_time=time;
-	}
+  if ((GPIO_Pin & GPIO_PIN_1))
+  {
+    add_delta_time();
+    l_time = time;
+  }
 }
 
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -379,14 +363,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
