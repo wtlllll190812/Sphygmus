@@ -71,6 +71,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+// 初始化
 void init()
 {
   for (int i = 0; i < LISTSIZE; i++)
@@ -257,8 +258,8 @@ int main(void)
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
-  MX_I2C1_Init();
   MX_TIM1_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   init();
   /* USER CODE END 2 */
@@ -271,11 +272,11 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     display();
-    // HAL_Delay(100);
-
-    printf("%f\r\n", get_sphygmus());
-    // HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
-    // printf("%d\r\n", time);
+    HAL_Delay(100);
+    current_uart = huart2;
+    // printf("%f\r\n",get_sphygmus());
+    //  HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
+    printf("%d\r\n", time);
   }
   /* USER CODE END 3 */
 }
@@ -335,7 +336,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 // 定时器中断
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  if (htim = (&htim1))
+  if (htim == (&htim1))
   {
     time++;
     if (time > MAXTIME)
