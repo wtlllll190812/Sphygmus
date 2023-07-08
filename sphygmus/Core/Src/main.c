@@ -47,6 +47,7 @@
 #define UART1TIME 100
 #define UART2TIME 2000
 #define ADC1TIME 10
+#define CLOSETIME 1000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -57,15 +58,17 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint32_t time;                      // 当前时间
-uint32_t l_time;                    // 上次心跳时间
-uint16_t adc_value;                 // adc采样值
-uint16_t last_value;                // 上个adc采样值
-uint32_t delta_time_list[LISTSIZE]; // 脉搏间的时间间隔列表
-UART_HandleTypeDef current_uart;    // 当前使用的串口
 int too_high;                       // 报警标志
 int too_low;                        // 报警标志
+int is_open = 0;                    // 是否开机
+int is_closed = 0;                  // 是否已经关机
+uint16_t adc_value;                 // adc采样值
+uint16_t last_value;                // 上个adc采样值
+uint32_t time;                      // 当前时间
+uint32_t l_time;                    // 上次心跳时间
 double sphygmus;                    // 脉搏
+uint32_t delta_time_list[LISTSIZE]; // 脉搏间的时间间隔列表
+UART_HandleTypeDef current_uart;    // 当前使用的串口
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -76,6 +79,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
 // 初始化
 void init()
 {
@@ -88,6 +92,21 @@ void init()
   HAL_ADCEx_Calibration_Start(&hadc1);
   current_uart = huart1;
   Oled_Init();
+}
+
+// 获取时间间隔
+uint32_t get_delta_time()
+{
+  uint32_t delta_time;
+  if (time < l_time)
+  {
+    delta_time = MAXTIME - l_time + time;
+  }
+  else
+  {
+    delta_time = time - l_time;
+  }
+  return delta_time;
 }
 
 // 微妙级延时
@@ -145,7 +164,7 @@ double average()
 // 添加时间间隔
 void add_delta_time()
 {
-  uint32_t delta_time;
+  uint32_t delta_time = get_delta_time();
   if (time < l_time)
   {
     delta_time = MAXTIME - l_time + time;
@@ -234,21 +253,33 @@ void give_alarm()
   static char low[] = {"too low "};
   static char high[] = {"too high"};
   static char normal[] = {"        "};
-  if (too_high)
+  if (too_high && is_open)
   {
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_RESET);
     Oled_Display_String(6, 10, high);
   }
-  else if (too_low)
+  else if (too_low && is_open)
   {
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_RESET);
     Oled_Display_String(6, 10, low);
   }
   else
   {
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_SET);
     Oled_Display_String(6, 10, normal);
   }
+}
+
+void on_close()
+{
+  is_open = 0;
+  is_closed = 0;
+}
+
+void start()
+{
+  init();
+  is_open = 1;
 }
 /* USER CODE END 0 */
 
@@ -286,6 +317,7 @@ int main(void)
   MX_TIM1_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
+  is_open = 0;
   init();
   HAL_ADC_Start_IT(&hadc1);
   /* USER CODE END 2 */
@@ -297,9 +329,18 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    display();
-    give_alarm();
-    get_sphygmus();
+    if (is_open)
+    {
+      display();
+      give_alarm();
+      get_sphygmus();
+    }
+    else if (!is_closed)
+    {
+      OLED_Clear(0x00);
+      HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_SET);
+      is_closed = 1;
+    }
     // HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
   }
   /* USER CODE END 3 */
@@ -367,24 +408,31 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
       time = 0;
     }
-    // 测量一次
-    if (time % ADC1TIME == 0)
-    {
-      HAL_ADC_Start_IT(&hadc1);
-    }
+    if (is_open)
+    { // 测量一次
+      if (time % ADC1TIME == 0)
+      {
+        HAL_ADC_Start_IT(&hadc1);
+      }
 
-    // 串口1输出
-    if (time % UART1TIME == 0)
-    {
-      current_uart = huart1;
-      printf("%d\r\n", adc_value);
-    }
+      // 串口1输出
+      if (time % UART1TIME == 0)
+      {
+        current_uart = huart1;
+        printf("%d\r\n", adc_value);
+      }
 
-    // 串口2输出
-    if (time % UART2TIME == 0)
-    {
-      current_uart = huart2;
-      printf("%f\n", sphygmus);
+      // 串口2输出
+      if (time % UART2TIME == 0)
+      {
+        current_uart = huart2;
+        printf("%f\n", sphygmus);
+      }
+
+      if (get_delta_time() > CLOSETIME)
+      {
+        on_close();
+      }
     }
   }
 }
@@ -394,8 +442,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if ((GPIO_Pin & GPIO_PIN_1))
   {
-    add_delta_time();
-    l_time = time;
+    if (!is_open)
+    {
+      start();
+    }
+    else
+    {
+      add_delta_time();
+      l_time = time;
+    }
   }
 }
 
