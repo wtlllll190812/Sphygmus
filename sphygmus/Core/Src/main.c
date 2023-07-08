@@ -325,25 +325,28 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-// adc????
+// adc中断
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
   last_value = adc_value;
   adc_value = HAL_ADC_GetValue(&hadc1);
 }
 
-// ?±??????
+// 定时器中断
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  time++;
-  if (time > MAXTIME)
+  if (htim = (&htim1))
   {
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0);
-    time = 0;
+    time++;
+    if (time > MAXTIME)
+    {
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0);
+      time = 0;
+    }
   }
 }
 
-// ????????
+// 外部中断（用于测量脉搏）
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if ((GPIO_Pin & GPIO_PIN_1))
