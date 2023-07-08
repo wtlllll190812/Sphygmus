@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.shader": "shaderlab",
+        "main.h": "c"
+    }
+}

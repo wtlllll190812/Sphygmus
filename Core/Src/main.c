@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2023 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -52,11 +52,11 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint32_t time;				 // 当前时间
-uint32_t l_time;
-uint16_t adc_value;		 // adc采样值
-uint16_t last_value;	 // 上个adc采样值
-uint32_t delta_time_list[LISTSIZE];  // 脉搏间的时间间隔列表
+uint32_t time;                      // 当前时间
+uint32_t l_time;                    // 上个时间
+uint16_t adc_value;                 // adc采样值
+uint16_t last_value;                // 上个adc采样值
+uint32_t delta_time_list[LISTSIZE]; // 脉搏间的时间间隔列表
 int alarm;
 /* USER CODE END PV */
 
@@ -71,90 +71,81 @@ static void MX_NVIC_Init(void);
 /* USER CODE BEGIN 0 */
 
 // 串口输出
-int fputc(int ch,FILE *f)
+int fputc(int ch, FILE *f)
 {
-	HAL_UART_Transmit(&huart1,(uint8_t*)&ch,1,10);
-	return ch;
+  HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 10);
+  return ch;
 }
-
 
 // adc采样
 void adc_sample()
 {
-		HAL_ADC_Start(&hadc1);
-		HAL_ADC_PollForConversion(&hadc1,10);
+  HAL_ADC_Start(&hadc1);
+  HAL_ADC_PollForConversion(&hadc1, 10);
 }
-
 
 // 检测上升沿
 int check_posiedge()
 {
-	if(adc_value>HIGH&&last_value<HIGH)
-		return 1;
-	return 0;
+  if (adc_value > HIGH && last_value < HIGH)
+    return 1;
+  return 0;
 }
-
 
 // 检测下降沿
 int check_negedge()
 {
-	if(adc_value<HIGH&&last_value>HIGH)
-		return 1;
-	return 0;
+  if (adc_value < HIGH && last_value > HIGH)
+    return 1;
+  return 0;
 }
-
-
 
 // 求时间间隔平均值
 double average()
 {
-	uint32_t sum=0;
-	for(uint8_t i=0;i<LISTSIZE;i++)
-	{
-		sum+=delta_time_list[i];
-	}
-	return (float)sum/LISTSIZE;
+  uint32_t sum = 0;
+  for (uint8_t i = 0; i < LISTSIZE; i++)
+  {
+    sum += delta_time_list[i];
+  }
+  return (float)sum / LISTSIZE;
 }
 
-
-//向队列中添加新的时间间隔
+// 向队列中添加新的时间间隔
 void add_delta_time()
 {
-	uint32_t delta_time;
-	if(time<l_time)
-	{
-		delta_time=MAXTIME-l_time+time;
-	}
-	else
-	{
-		delta_time=time-l_time;
-	}
-	
-	for(int i=0;i<LISTSIZE-1;i++)
-	{
-		delta_time_list[i]=delta_time_list[i+1];
-	}
-	delta_time_list[LISTSIZE-1] = delta_time;
+  uint32_t delta_time;
+  if (time < l_time)
+  {
+    delta_time = MAXTIME - l_time + time;
+  }
+  else
+  {
+    delta_time = time - l_time;
+  }
+
+  for (int i = 0; i < LISTSIZE - 1; i++)
+  {
+    delta_time_list[i] = delta_time_list[i + 1];
+  }
+  delta_time_list[LISTSIZE - 1] = delta_time;
 }
 
-
-
-
-//计算心率
+// 计算心率
 double get_sphygmus()
 {
-	double avg_time=average();
-	double sphygmus=(double)MAXTIME/avg_time*60;
-	alarm=(sphygmus>MAXSPHYFMUS||sphygmus<MINSPHYFMUS);
+  double avg_time = average();
+  double sphygmus = (double)MAXTIME / avg_time * 60;
+  alarm = (sphygmus > MAXSPHYFMUS || sphygmus < MINSPHYFMUS);
 
-	return sphygmus;
+  return sphygmus;
 }
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -187,9 +178,9 @@ int main(void)
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
-	HAL_ADC_Start_IT(&hadc1);
-	HAL_TIM_Base_Start_IT(&htim3);
-	HAL_ADCEx_Calibration_Start(&hadc1); 
+  HAL_ADC_Start_IT(&hadc1);
+  HAL_TIM_Base_Start_IT(&htim3);
+  HAL_ADCEx_Calibration_Start(&hadc1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -199,18 +190,18 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		HAL_ADC_Start_IT(&hadc1);
-		printf("%f\r\n",get_sphygmus());
+    HAL_ADC_Start_IT(&hadc1);
+    printf("%f\r\n", get_sphygmus());
 
-		HAL_Delay(100);
-	}
+    HAL_Delay(100);
+  }
   /* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -218,8 +209,8 @@ void SystemClock_Config(void)
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -232,9 +223,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -253,9 +243,9 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief NVIC Configuration.
-  * @retval None
-  */
+ * @brief NVIC Configuration.
+ * @retval None
+ */
 static void MX_NVIC_Init(void)
 {
   /* ADC1_2_IRQn interrupt configuration */
@@ -264,51 +254,49 @@ static void MX_NVIC_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-//adc中断
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+// adc中断
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
-	if(check_posiedge())
-	{
-		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_0,GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_1,GPIO_PIN_SET);
-	}
-	else if(check_negedge())
-	{
-		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_0,GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_1,GPIO_PIN_RESET);
-	}
-	last_value=adc_value;
-	adc_value=HAL_ADC_GetValue(&hadc1);
+  if (check_posiedge())
+  {
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
+  }
+  else if (check_negedge())
+  {
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
+  }
+  last_value = adc_value;
+  adc_value = HAL_ADC_GetValue(&hadc1);
 }
 
-
-
-//时钟中断
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
+// 时钟中断
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	time++;
-	if(time>MAXTIME)
-	{
-		HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
-		time=0;
-	}
-}	
+  time++;
+  if (time > MAXTIME)
+  {
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0);
+    time = 0;
+  }
+}
 
-//外部中断
+// 外部中断
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if((GPIO_Pin&GPIO_PIN_8))
-	{
-		add_delta_time();
-		l_time=time;
-	}
+  if ((GPIO_Pin & GPIO_PIN_8))
+  {
+    add_delta_time();
+    l_time = time;
+  }
 }
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -320,14 +308,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
