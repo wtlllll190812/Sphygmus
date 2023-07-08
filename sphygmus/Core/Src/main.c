@@ -42,8 +42,8 @@
 #define HIGH 3000
 #define LISTSIZE 10
 #define MAXTIME 100000
-#define MAXSPHYFMUS 150
-#define MINSPHYFMUS 50
+#define MAXSPHYFMUS 1900
+#define MINSPHYFMUS 800
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -60,7 +60,8 @@ uint16_t adc_value;                 // adc采样值
 uint16_t last_value;                // 上个adc采样值
 uint32_t delta_time_list[LISTSIZE]; // 脉搏间的时间间隔列表
 UART_HandleTypeDef current_uart;    // 当前使用的串口
-int alarm;                          // 报警标志
+int too_high;                       // 报警标志
+int too_low;                        // 报警标志
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -162,8 +163,8 @@ double get_sphygmus()
 {
   double avg_time = average();
   double sphygmus = (double)MAXTIME / avg_time * 60;
-  alarm = (sphygmus > MAXSPHYFMUS || sphygmus < MINSPHYFMUS);
-
+  too_high = (sphygmus > MAXSPHYFMUS);
+  too_low = (sphygmus < MINSPHYFMUS);
   return sphygmus;
 }
 
@@ -218,12 +219,32 @@ void display()
   static char buf[] = {"rate: "};
   static char sphygmus[5];
 
+	Oled_Display_Pic(50, 50, 0, 15, heart_small);
   Oled_Display_String(0, 80, buf);
-  Oled_Display_String(12, 80, to_string(get_sphygmus(), sphygmus, 5, 10));
-
-  Oled_Display_Pic(50, 50, 0, 15, heart_small);
-  HAL_Delay(10);
+  Oled_Display_String(3, 80, to_string(get_sphygmus(), sphygmus, 5, 10));
   Oled_Display_Pic(50, 50, 0, 15, heart_large);
+}
+
+void give_alarm()
+{
+  static char low[] = {"too low "};
+  static char high[] = {"too high"};
+  static char normal[] = {"        "};
+  if (too_high)
+  {
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+    Oled_Display_String(6, 10, high);
+  }
+  else if (too_low)
+  {
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+    Oled_Display_String(6, 10, low);
+  }
+  else
+  {
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+    Oled_Display_String(6, 10, normal);
+  }
 }
 /* USER CODE END 0 */
 
@@ -262,25 +283,25 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   init();
-	HAL_ADC_Start_IT(&hadc1);
+  HAL_ADC_Start_IT(&hadc1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	uint8_t x=100;
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
     display();
-    HAL_Delay(100);
-    current_uart = huart2;
-    printf("%f\n",get_sphygmus());
+    give_alarm();
+
     // HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
-		// HAL_UART_Transmit(&huart2, &x, 8, 1000);
-    // printf("test\r\n");
-		HAL_ADC_Start_IT(&hadc1);
+    HAL_Delay(10);
+    current_uart = huart1;
+    printf("%d\r\n", adc_value);
+    current_uart = huart2;
+    printf("%f\n", get_sphygmus());
   }
   /* USER CODE END 3 */
 }
@@ -303,7 +324,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL8;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -315,15 +336,15 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV4;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
@@ -336,8 +357,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
   last_value = adc_value;
   adc_value = HAL_ADC_GetValue(&hadc1);
-	current_uart = huart1;
-	printf("%d/n",adc_value);
 }
 
 // 定时器中断
@@ -349,6 +368,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (time > MAXTIME)
     {
       time = 0;
+    }
+    if (time % 1000 == 0)
+    {
+      HAL_ADC_Start_IT(&hadc1);
     }
   }
 }
