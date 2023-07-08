@@ -71,6 +71,19 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void init()
+{
+  for (int i = 0; i < LISTSIZE; i++)
+  {
+    delta_time_list[i] = 0;
+  }
+  HAL_ADC_Start_IT(&hadc1);
+  HAL_TIM_Base_Start_IT(&htim1);
+  HAL_ADCEx_Calibration_Start(&hadc1);
+  current_uart = huart1;
+  Oled_Init();
+}
+
 // 微妙级延时
 void delay_us(uint32_t nus)
 {
@@ -174,7 +187,7 @@ char *to_string(double num, char *str, int size, int radix)
     str[i++] = index[unum % (unsigned)radix];
     unum /= radix;
 
-  } while (unum);
+  } while (unum && i < size);
   for (; i < size - 1; i++)
   {
     str[i] = ' ';
@@ -247,13 +260,7 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_ADC_Start_IT(&hadc1);
-  HAL_TIM_Base_Start_IT(&htim1);
-  HAL_ADCEx_Calibration_Start(&hadc1);
-  current_uart = huart1;
-
-  Oled_Init();
-
+  init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -264,7 +271,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     display();
-    HAL_Delay(100);
+    // HAL_Delay(100);
 
     printf("%f\r\n", get_sphygmus());
     // HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
