@@ -40,10 +40,13 @@
 /* USER CODE BEGIN PD */
 #define LOW 1000
 #define HIGH 3000
-#define LISTSIZE 10
+#define LISTSIZE 5
 #define MAXTIME 100000
 #define MAXSPHYFMUS 1900
 #define MINSPHYFMUS 800
+#define UART1TIME 100
+#define UART2TIME 2000
+#define ADC1TIME 10
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -62,6 +65,7 @@ uint32_t delta_time_list[LISTSIZE]; // 脉搏间的时间间隔列表
 UART_HandleTypeDef current_uart;    // 当前使用的串口
 int too_high;                       // 报警标志
 int too_low;                        // 报警标志
+double sphygmus;                    // 脉搏
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -159,13 +163,13 @@ void add_delta_time()
 }
 
 // 获取脉搏
-double get_sphygmus()
+void get_sphygmus()
 {
   double avg_time = average();
-  double sphygmus = (double)MAXTIME / avg_time * 60;
-  too_high = (sphygmus > MAXSPHYFMUS);
-  too_low = (sphygmus < MINSPHYFMUS);
-  return sphygmus;
+  double sp = 1000.0 / avg_time * 60;
+  too_high = (sp > MAXSPHYFMUS);
+  too_low = (sp < MINSPHYFMUS);
+  sphygmus = sp;
 }
 
 // 数字转换为字符串
@@ -217,11 +221,11 @@ char *to_string(double num, char *str, int size, int radix)
 void display()
 {
   static char buf[] = {"rate: "};
-  static char sphygmus[5];
+  static char sphygmus_str[5];
 
-	Oled_Display_Pic(50, 50, 0, 15, heart_small);
+  Oled_Display_Pic(50, 50, 0, 15, heart_small);
   Oled_Display_String(0, 80, buf);
-  Oled_Display_String(3, 80, to_string(get_sphygmus(), sphygmus, 5, 10));
+  Oled_Display_String(3, 80, to_string(sphygmus, sphygmus_str, 5, 10));
   Oled_Display_Pic(50, 50, 0, 15, heart_large);
 }
 
@@ -249,9 +253,9 @@ void give_alarm()
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -295,21 +299,16 @@ int main(void)
     /* USER CODE BEGIN 3 */
     display();
     give_alarm();
-
+    get_sphygmus();
     // HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
-    HAL_Delay(10);
-    current_uart = huart1;
-    printf("%d\r\n", adc_value);
-    current_uart = huart2;
-    printf("%f\n", get_sphygmus());
   }
   /* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -317,8 +316,8 @@ void SystemClock_Config(void)
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -331,9 +330,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -369,9 +367,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
       time = 0;
     }
-    if (time % 1000 == 0)
+    // 测量一次
+    if (time % ADC1TIME == 0)
     {
       HAL_ADC_Start_IT(&hadc1);
+    }
+
+    // 串口1输出
+    if (time % UART1TIME == 0)
+    {
+      current_uart = huart1;
+      printf("%d\r\n", adc_value);
+    }
+
+    // 串口2输出
+    if (time % UART2TIME == 0)
+    {
+      current_uart = huart2;
+      printf("%f\n", sphygmus);
     }
   }
 }
@@ -389,9 +402,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -403,14 +416,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
