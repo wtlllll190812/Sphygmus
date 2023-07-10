@@ -48,7 +48,7 @@
 #define CLOSETIME 5000
 #define MIN_DELTA 333
 #define MAX_DELTA 2000
-#define MAX_DELTA_DELTA 80
+#define MAX_DELTA_DELTA 750
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -180,6 +180,7 @@ int main(void)
       OLED_Clear(0x00);
       HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_SET);
       is_closed = 1;
+      sphygmus_num = 0;
     }
     // HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
   }
@@ -426,10 +427,13 @@ double average()
 void add_delta_time()
 {
   uint32_t delta_time = get_delta_time();
-  if (delta_time < MIN_DELTA 
-  || delta_time > MAX_DELTA 
-  || (delta_time - delta_time_list[LISTSIZE - 1]) > MAX_DELTA_DELTA 
-  || delta_time - delta_time_list[LISTSIZE - 1] > MAX_DELTA_DELTA)
+  if (delta_time < MIN_DELTA || delta_time > MAX_DELTA)
+  {
+    return;
+  }
+
+  int delta_delta = delta_time > delta_time_list[LISTSIZE - 1] ? delta_time - delta_time_list[LISTSIZE - 1] : delta_time_list[LISTSIZE - 1] - delta_time;
+  if (sphygmus_num >= LISTSIZE && delta_delta > MAX_DELTA_DELTA)
   {
     return;
   }
