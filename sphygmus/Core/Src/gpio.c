@@ -53,7 +53,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(Alarm_GPIO_Port, Alarm_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(Alarm2_GPIO_Port, Alarm2_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(Alarm2_GPIO_Port, Alarm2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PtPin */
   GPIO_InitStruct.Pin = Alarm_Pin;

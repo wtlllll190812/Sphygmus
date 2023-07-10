@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.shader": "shaderlab",
+        "limits": "c",
+        "string_view": "c"
+    }
+}

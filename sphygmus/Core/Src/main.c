@@ -47,7 +47,7 @@
 #define UART1TIME 100
 #define UART2TIME 2000
 #define ADC1TIME 10
-#define CLOSETIME 1000
+#define CLOSETIME 50000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -79,6 +79,223 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+// 初始化
+void init(void);
+
+// 获取时间间隔
+uint32_t get_delta_time(void);
+
+// 微妙级延时
+void delay_us(uint32_t nus);
+
+// 输出
+int fputc(int ch, FILE *f);
+
+// adc采样
+void adc_sample(void);
+
+// 上边沿检测
+int check_posiedge(void);
+
+// 下边沿检测
+int check_negedge(void);
+
+// 脉搏间隔平均值
+double average(void);
+
+// 添加时间间隔
+void add_delta_time(void);
+
+// 获取脉搏
+void get_sphygmus(void);
+
+// 数字转换为字符串
+char *to_string(uint32_t num, char *str, int size);
+
+// oled显示
+void display(void);
+
+// 报警
+void give_alarm(void);
+
+// 关机
+void on_close(void);
+
+// 开机
+void start(void);
+/* USER CODE END 0 */
+
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
+  /* USER CODE BEGIN 1 */
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
+  SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_ADC1_Init();
+  MX_TIM2_Init();
+  MX_USART1_UART_Init();
+  MX_USART2_UART_Init();
+  MX_TIM1_Init();
+  MX_I2C1_Init();
+  /* USER CODE BEGIN 2 */
+  is_open = 0;
+  init();
+  HAL_ADC_Start_IT(&hadc1);
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+  while (1)
+  {
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+    if (is_open)
+    {
+      display();
+      give_alarm();
+      get_sphygmus();
+    }
+    else if (!is_closed)
+    {
+      OLED_Clear(0x00);
+      HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_SET);
+      is_closed = 1;
+    }
+    // HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
+  }
+  /* USER CODE END 3 */
+}
+
+/**
+  * @brief System Clock Configuration
+  * @retval None
+  */
+void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Initializes the CPU, AHB and APB buses clocks
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/* USER CODE BEGIN 4 */
+// adc中断
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+{
+  last_value = adc_value;
+  adc_value = HAL_ADC_GetValue(&hadc1);
+}
+
+// 定时器中断
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim == (&htim1))
+  {
+    time++;
+    if (time > MAXTIME)
+    {
+      time = 0;
+    }
+    if (is_open)
+    { // 测量一次
+      if (time % ADC1TIME == 0)
+      {
+        HAL_ADC_Start_IT(&hadc1);
+      }
+
+      // 串口1输出
+      if (time % UART1TIME == 0)
+      {
+        current_uart = huart1;
+        printf("%d\r\n", adc_value);
+      }
+
+      // 串口2输出
+      if (time % UART2TIME == 0)
+      {
+        current_uart = huart2;
+        printf("%f\n", sphygmus);
+      }
+
+      if (get_delta_time() > CLOSETIME)
+      {
+        on_close();
+      }
+    }
+  }
+}
+
+// 外部中断（用于测量脉搏）
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  if ((GPIO_Pin & GPIO_PIN_1))
+  {
+    if (!is_open)
+    {
+      start();
+      l_time = time;
+    }
+
+    add_delta_time();
+    l_time = time;
+  }
+}
 
 // 初始化
 void init()
@@ -118,6 +335,61 @@ void delay_us(uint32_t nus)
   {
   }
   __HAL_TIM_DISABLE(&htim2);
+}
+
+// oled显示
+void display()
+{
+  static char buf[] = {"rate: "};
+  static char buf1[] = {"rate:"};
+  static char sphygmus_str[5];
+
+  Oled_Display_String(0, 80, buf1);
+  Oled_Display_Pic(50, 50, 0, 15, heart_small);
+  Oled_Display_String(0, 80, buf);
+  Oled_Display_String(3, 80, to_string(sphygmus, sphygmus_str, 5));
+  Oled_Display_Pic(50, 50, 0, 15, heart_large);
+}
+
+// 报警
+void give_alarm()
+{
+  static char low[] = {"too low "};
+  static char high[] = {"too high"};
+  static char normal[] = {"        "};
+  if (too_high && is_open)
+  {
+    HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_RESET);
+    Oled_Display_String(6, 10, high);
+  }
+  else if (too_low && is_open)
+  {
+    HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_RESET);
+    Oled_Display_String(6, 10, low);
+  }
+  else
+  {
+    HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_SET);
+    Oled_Display_String(6, 10, normal);
+  }
+}
+
+// 关机
+void on_close()
+{
+  is_open = 0;
+  is_closed = 0;
+}
+
+// 开机
+void start()
+{
+  is_open = 1;
+  for (int i = 0; i < LISTSIZE; i++)
+  {
+    delta_time_list[i] = 0;
+  }
+  // Oled_Init();
 }
 
 // 输出
@@ -192,274 +464,42 @@ void get_sphygmus()
 }
 
 // 数字转换为字符串
-char *to_string(double num, char *str, int size, int radix)
+char *to_string(uint32_t num, char *str, int size)
 {
-  static char index[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.";
+  static char index[] = "0123456789";
 
-  unsigned unum;
   int i = 0, j, k;
-
-  if (radix == 10 && num < 0)
-  {
-    unum = (unsigned)-num;
-    str[i++] = '-';
-  }
-  else
-    unum = (unsigned)num;
 
   do
   {
-    str[i++] = index[unum % (unsigned)radix];
-    unum /= radix;
+    str[i++] = index[num % 10];
+    num /= 10;
 
-  } while (unum && i < size);
-  for (; i < size - 1; i++)
-  {
-    str[i] = ' ';
-  }
-
-  str[i] = '\0';
-
-  if (str[0] == '-')
-    k = 1;
-  else
-    k = 0;
+  } while (num);
 
   char temp;
-  for (j = k; j <= (i - 1) / 2; j++)
+  for (j = 0; j <= (i - 1) / 2; j++)
   {
     temp = str[j];
     str[j] = str[i - 1 + k - j];
     str[i - 1 + k - j] = temp;
   }
 
+  for (; i < size; i++)
+  {
+    str[i] = ' ';
+  }
+
+  str[i] = '\0';
   return str;
-}
-
-// oled显示
-void display()
-{
-  static char buf[] = {"rate: "};
-  static char sphygmus_str[5];
-
-  Oled_Display_Pic(50, 50, 0, 15, heart_small);
-  Oled_Display_String(0, 80, buf);
-  Oled_Display_String(3, 80, to_string(sphygmus, sphygmus_str, 5, 10));
-  Oled_Display_Pic(50, 50, 0, 15, heart_large);
-}
-
-void give_alarm()
-{
-  static char low[] = {"too low "};
-  static char high[] = {"too high"};
-  static char normal[] = {"        "};
-  if (too_high && is_open)
-  {
-    HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_RESET);
-    Oled_Display_String(6, 10, high);
-  }
-  else if (too_low && is_open)
-  {
-    HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_RESET);
-    Oled_Display_String(6, 10, low);
-  }
-  else
-  {
-    HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_SET);
-    Oled_Display_String(6, 10, normal);
-  }
-}
-
-void on_close()
-{
-  is_open = 0;
-  is_closed = 0;
-}
-
-void start()
-{
-  init();
-  is_open = 1;
-}
-/* USER CODE END 0 */
-
-/**
- * @brief  The application entry point.
- * @retval int
- */
-int main(void)
-{
-  /* USER CODE BEGIN 1 */
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_ADC1_Init();
-  MX_TIM2_Init();
-  MX_USART1_UART_Init();
-  MX_USART2_UART_Init();
-  MX_TIM1_Init();
-  MX_I2C1_Init();
-  /* USER CODE BEGIN 2 */
-  is_open = 0;
-  init();
-  HAL_ADC_Start_IT(&hadc1);
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-    if (is_open)
-    {
-      display();
-      give_alarm();
-      get_sphygmus();
-    }
-    else if (!is_closed)
-    {
-      OLED_Clear(0x00);
-      HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_SET);
-      is_closed = 1;
-    }
-    // HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
-  }
-  /* USER CODE END 3 */
-}
-
-/**
- * @brief System Clock Configuration
- * @retval None
- */
-void SystemClock_Config(void)
-{
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
-
-  /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-  {
-    Error_Handler();
-  }
-}
-
-/* USER CODE BEGIN 4 */
-// adc中断
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
-{
-  last_value = adc_value;
-  adc_value = HAL_ADC_GetValue(&hadc1);
-}
-
-// 定时器中断
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  if (htim == (&htim1))
-  {
-    time++;
-    if (time > MAXTIME)
-    {
-      time = 0;
-    }
-    if (is_open)
-    { // 测量一次
-      if (time % ADC1TIME == 0)
-      {
-        HAL_ADC_Start_IT(&hadc1);
-      }
-
-      // 串口1输出
-      if (time % UART1TIME == 0)
-      {
-        current_uart = huart1;
-        printf("%d\r\n", adc_value);
-      }
-
-      // 串口2输出
-      if (time % UART2TIME == 0)
-      {
-        current_uart = huart2;
-        printf("%f\n", sphygmus);
-      }
-
-      if (get_delta_time() > CLOSETIME)
-      {
-        on_close();
-      }
-    }
-  }
-}
-
-// 外部中断（用于测量脉搏）
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-  if ((GPIO_Pin & GPIO_PIN_1))
-  {
-    if (!is_open)
-    {
-      start();
-    }
-    else
-    {
-      add_delta_time();
-      l_time = time;
-    }
-  }
 }
 
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -471,14 +511,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef USE_FULL_ASSERT
+#ifdef  USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
