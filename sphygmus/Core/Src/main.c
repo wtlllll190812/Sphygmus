@@ -249,7 +249,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
       time = 0;
     }
-    if (is_open || 1) // TODO 临时
+    if (is_open)
     {
       // 测量一次
       if (time % ADC1TIME == 0)
