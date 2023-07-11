@@ -42,13 +42,13 @@
 #define MAXTIME 100000
 #define MAXSPHYFMUS 150
 #define MINSPHYFMUS 50
-#define UART1TIME 50
+#define UART1TIME 10
 #define UART2TIME 2000
 #define ADC1TIME 10
 #define CLOSETIME 5000
 #define MIN_DELTA 333
 #define MAX_DELTA 2000
-#define MAX_DELTA_DELTA 750
+#define MAX_DELTA_DELTA 250
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -249,8 +249,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
       time = 0;
     }
-    if (is_open)
-    { // 测量一次
+    if (is_open || 1) // TODO 临时
+    {
+      // 测量一次
       if (time % ADC1TIME == 0)
       {
         HAL_ADC_Start_IT(&hadc1);
@@ -260,7 +261,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       if (time % UART1TIME == 0)
       {
         current_uart = huart1;
-        printf("%d\r\n", adc_value);
+        printf("%d,%f\n", adc_value, sphygmus);
       }
 
       // 串口2输出
@@ -282,7 +283,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 // 外部中断（用于测量脉搏）
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  if ((GPIO_Pin & GPIO_PIN_11))
+  if (GPIO_Pin & GPIO_PIN_11)
   {
     if (!is_open)
     {
