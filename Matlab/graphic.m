@@ -25,17 +25,16 @@ yticks(50:10:150);
 while 1
     str=readline(s1);
     if not (isempty(str))
-        buffer1=circshift(buffer1,-1);
-        buffer2=circshift(buffer2,-1);
-
         datas=strsplit(str);
+
         data1=datas(1);
-        data2=datas(2);
-
+        buffer1=circshift(buffer1,-1);
         buffer1(index1) = str2double(data1);
-        buffer2(index2) = str2double(data2);
-
         set(plot1, 'YData', buffer1);
+
+        data2=datas(2);
+        buffer2=circshift(buffer2,-1);
+        buffer2(index2) = str2double(data2);
         set(plot2, 'YData', buffer2);
 
         drawnow 
