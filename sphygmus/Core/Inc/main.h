@@ -59,10 +59,8 @@ void delay_us(uint32_t delta);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define Alarm_Pin GPIO_PIN_13
-#define Alarm_GPIO_Port GPIOC
-#define Alarm2_Pin GPIO_PIN_8
-#define Alarm2_GPIO_Port GPIOB
+#define Alarm_Pin GPIO_PIN_8
+#define Alarm_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

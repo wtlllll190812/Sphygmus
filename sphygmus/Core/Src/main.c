@@ -38,16 +38,17 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define LISTSIZE 15
+#define MINLISTSIZE 15
+#define MAXLISTSIZE 60
 #define MAXTIME 100000
 #define MAXSPHYFMUS 150
 #define MINSPHYFMUS 50
-#define UART1TIME 10
+#define UART1TIME 20
 #define UART2TIME 2000
-#define ADC1TIME 10
+#define ADC1TIME 20
 #define CLOSETIME 5000
 #define MIN_DELTA 333
-#define MAX_DELTA 2000
+#define MAX_DELTA 1000
 #define MAX_DELTA_DELTA 250
 /* USER CODE END PD */
 
@@ -70,7 +71,7 @@ uint16_t last_value;                // 上个adc采样值
 uint32_t time;                      // 当前时间
 uint32_t l_time;                    // 上次心跳时间
 double sphygmus;                    // 脉搏
-uint32_t delta_time_list[LISTSIZE]; // 脉搏间的时间间隔列表
+uint32_t delta_time_list[MAXLISTSIZE]; // 脉搏间的时间间隔列表
 UART_HandleTypeDef current_uart;    // 当前使用的串口
 /* USER CODE END PV */
 
@@ -124,9 +125,9 @@ void start(void);
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -188,9 +189,9 @@ int main(void)
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -198,8 +199,8 @@ void SystemClock_Config(void)
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
+  * in the RCC_OscInitTypeDef structure.
+  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -212,8 +213,9 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -261,7 +263,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       if (time % UART1TIME == 0)
       {
         current_uart = huart1;
-        printf("%d,%f\n", adc_value, sphygmus);
+        printf("%d %f\r\n", adc_value,sphygmus);
+        // printf("%d,%f\n", adc_value, sphygmus);
       }
 
       // 串口2输出
@@ -291,7 +294,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
       l_time = time;
     }
 
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     add_delta_time();
     heart_beat = 1;
     l_time = time;
@@ -301,7 +304,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 // 初始化
 void init()
 {
-  for (int i = 0; i < LISTSIZE; i++)
+  for (int i = 0; i < MAXLISTSIZE; i++)
   {
     delta_time_list[i] = 0;
   }
@@ -365,17 +368,17 @@ void give_alarm()
   static char normal[] = {"        "};
   if (too_high && is_open)
   {
-    // HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOB, Alarm_Pin,GPIO_PIN_SET );
     Oled_Display_String(6, 10, high);
   }
   else if (too_low && is_open)
   {
-    // HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOB, Alarm_Pin, GPIO_PIN_SET);
     Oled_Display_String(6, 10, low);
   }
   else
   {
-    // HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, Alarm_Pin,GPIO_PIN_RESET );
     Oled_Display_String(6, 10, normal);
   }
 }
@@ -391,7 +394,7 @@ void on_close()
 void start()
 {
   is_open = 1;
-  for (int i = 0; i < LISTSIZE; i++)
+  for (int i = 0; i < MAXLISTSIZE; i++)
   {
     delta_time_list[i] = 0;
   }
@@ -416,11 +419,11 @@ void adc_sample()
 double average()
 {
   uint32_t sum = 0;
-  for (uint8_t i = 0; i < LISTSIZE; i++)
+  for (uint8_t i = 0; i < MAXLISTSIZE; i++)
   {
     sum += delta_time_list[i];
   }
-  int num = sphygmus_num > LISTSIZE ? LISTSIZE : sphygmus_num;
+  int num = sphygmus_num > MAXLISTSIZE ? MAXLISTSIZE : sphygmus_num;
   return (float)sum / num;
 }
 
@@ -433,17 +436,17 @@ void add_delta_time()
     return;
   }
 
-  int delta_delta = delta_time > delta_time_list[LISTSIZE - 1] ? delta_time - delta_time_list[LISTSIZE - 1] : delta_time_list[LISTSIZE - 1] - delta_time;
-  if (sphygmus_num >= LISTSIZE && delta_delta > MAX_DELTA_DELTA)
+  int delta_delta = delta_time > delta_time_list[MAXLISTSIZE - 1] ? delta_time - delta_time_list[MAXLISTSIZE - 1] : delta_time_list[MAXLISTSIZE - 1] - delta_time;
+  if (sphygmus_num >= MINLISTSIZE && delta_delta > MAX_DELTA_DELTA)
   {
     return;
   }
 
-  for (int i = 0; i < LISTSIZE - 1; i++)
+  for (int i = 0; i < MAXLISTSIZE - 1; i++)
   {
     delta_time_list[i] = delta_time_list[i + 1];
   }
-  delta_time_list[LISTSIZE - 1] = delta_time;
+  delta_time_list[MAXLISTSIZE - 1] = delta_time;
   sphygmus_num++;
 }
 
@@ -452,8 +455,11 @@ void get_sphygmus()
 {
   double avg_time = average();
   double sp = 1000.0 / avg_time * 60;
-  too_high = (sp > MAXSPHYFMUS);
-  too_low = (sp < MINSPHYFMUS);
+  if(sphygmus_num>MINLISTSIZE)
+	{
+		too_high = (sp > MAXSPHYFMUS);
+		too_low = (sp < MINSPHYFMUS);
+	}
   sphygmus = sp;
 }
 
@@ -496,9 +502,9 @@ char *to_string(uint32_t num, char *str, int size)
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -510,14 +516,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef USE_FULL_ASSERT
+#ifdef  USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
