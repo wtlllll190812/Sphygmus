@@ -41,8 +41,8 @@
 #define MINLISTSIZE 15
 #define MAXLISTSIZE 60
 #define MAXTIME 100000
-#define MAXSPHYFMUS 80
-#define MINSPHYFMUS 60
+#define MAXSPHYFMUS 150
+#define MINSPHYFMUS 50
 #define UART1TIME 20
 #define UART2TIME 2000
 #define ADC1TIME 20
@@ -288,10 +288,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin & GPIO_PIN_11)
   {
-    if (!is_open)
+    if (!is_open&&sphygmus_num>2)
     {
       start();
       l_time = time;
+			sphygmus_num=0;
     }
 
     //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);

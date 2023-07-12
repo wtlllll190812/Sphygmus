@@ -3,7 +3,7 @@
 <title>Static Call Graph - [sphygmus\sphygmus.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image sphygmus\sphygmus.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060422: Last Updated: Wed Jul 12 14:16:17 2023
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060422: Last Updated: Wed Jul 12 14:45:29 2023
 <BR><P>
 <H3>Maximum Stack Usage =        152 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -574,7 +574,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_IRQHandler
 </UL>
 
-<P><STRONG><a name="[63]"></a>HAL_GPIO_EXTI_Callback</STRONG> (Thumb, 34 bytes, Stack size 8 bytes, main.o(i.HAL_GPIO_EXTI_Callback))
+<P><STRONG><a name="[63]"></a>HAL_GPIO_EXTI_Callback</STRONG> (Thumb, 44 bytes, Stack size 8 bytes, main.o(i.HAL_GPIO_EXTI_Callback))
 <BR><BR>[Stack]<UL><LI>Max Depth = 20<LI>Call Chain = HAL_GPIO_EXTI_Callback &rArr; add_delta_time
 </UL>
 <BR>[Calls]<UL><LI><a href="#[64]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;start
@@ -1249,8 +1249,8 @@ Global Symbols
 <LI><a href="#[80]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_TIM_PeriodElapsedCallback
 </UL>
 
-<P><STRONG><a name="[bd]"></a>get_sphygmus</STRONG> (Thumb, 92 bytes, Stack size 24 bytes, main.o(i.get_sphygmus))
-<BR><BR>[Stack]<UL><LI>Max Depth = 112<LI>Call Chain = get_sphygmus &rArr; __aeabi_dmul &rArr; _double_epilogue &rArr; _double_round
+<P><STRONG><a name="[bd]"></a>get_sphygmus</STRONG> (Thumb, 86 bytes, Stack size 16 bytes, main.o(i.get_sphygmus))
+<BR><BR>[Stack]<UL><LI>Max Depth = 104<LI>Call Chain = get_sphygmus &rArr; __aeabi_dmul &rArr; _double_epilogue &rArr; _double_round
 </UL>
 <BR>[Calls]<UL><LI><a href="#[41]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_dmul
 <LI><a href="#[43]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_ddiv
