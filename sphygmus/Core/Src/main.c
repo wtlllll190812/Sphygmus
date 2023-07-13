@@ -60,19 +60,19 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-int too_high;                       // 报警标志
-int too_low;                        // 报警标志
-int is_open = 0;                    // 是否开机
-int is_closed = 0;                  // 是否已经关机
-int heart_beat = 0;                 // 心跳标志
-uint8_t sphygmus_num;               // 测试到的心跳次数
-uint16_t adc_value;                 // adc采样值
-uint16_t last_value;                // 上个adc采样值
-uint32_t time;                      // 当前时间
-uint32_t l_time;                    // 上次心跳时间
-double sphygmus;                    // 脉搏
+int too_high;                          // 报警标志
+int too_low;                           // 报警标志
+int is_open = 0;                       // 是否开机
+int is_closed = 0;                     // 是否已经关机
+int heart_beat = 0;                    // 心跳标志
+uint8_t sphygmus_num;                  // 测试到的心跳次数
+uint16_t adc_value;                    // adc采样值
+uint16_t last_value;                   // 上个adc采样值
+uint32_t time;                         // 当前时间
+uint32_t l_time;                       // 上次心跳时间
+double sphygmus;                       // 脉搏
 uint32_t delta_time_list[MAXLISTSIZE]; // 脉搏间的时间间隔列表
-UART_HandleTypeDef current_uart;    // 当前使用的串口
+UART_HandleTypeDef current_uart;       // 当前使用的串口
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -125,9 +125,9 @@ void start(void);
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -158,8 +158,8 @@ int main(void)
   MX_TIM1_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  is_open = 0;
-  init();
+  init();      // 初始化系统
+  is_open = 0; // 默认关闭
   HAL_ADC_Start_IT(&hadc1);
   /* USER CODE END 2 */
 
@@ -170,28 +170,27 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    if (is_open)
+    if (is_open) // 若处于开机状态
     {
-      display();
-      give_alarm();
-      get_sphygmus();
+      display();      // oled显示
+      give_alarm();   // 满足条件时报警
+      get_sphygmus(); // 计算当前心率
     }
-    else if (!is_closed)
+    else if (!is_closed) // 若退出开机状态且还没有完成关机
     {
-      OLED_Clear(0x00);
-      HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_SET);
-      is_closed = 1;
-      sphygmus_num = 0;
+      HAL_GPIO_WritePin(GPIOC, Alarm_Pin, GPIO_PIN_SET); // 关闭蜂鸣器
+      OLED_Clear(0x00);                                  // oled清屏
+      sphygmus_num = 0;                                  // 清除心跳计数
+      is_closed = 1;                                     // 完成关机
     }
-    // HAL_I2C_Master_Transmit(&hi2c1,0x78,i2cbuf,sizeof(i2cbuf),1000);
   }
   /* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -199,8 +198,8 @@ void SystemClock_Config(void)
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -213,9 +212,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -263,7 +261,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       if (time % UART1TIME == 0)
       {
         current_uart = huart1;
-        printf("%d %f\r\n", adc_value,sphygmus);
+        printf("%d %f\r\n", adc_value, sphygmus);
         // printf("%d,%f\n", adc_value, sphygmus);
       }
 
@@ -288,14 +286,14 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin & GPIO_PIN_11)
   {
-    if (!is_open&&sphygmus_num>2)
+    if (!is_open && sphygmus_num > 2)
     {
       start();
       l_time = time;
-			sphygmus_num=0;
+      sphygmus_num = 0;
     }
 
-    //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     add_delta_time();
     heart_beat = 1;
     l_time = time;
@@ -369,7 +367,7 @@ void give_alarm()
   static char normal[] = {"        "};
   if (too_high && is_open)
   {
-    HAL_GPIO_WritePin(GPIOB, Alarm_Pin,GPIO_PIN_SET );
+    HAL_GPIO_WritePin(GPIOB, Alarm_Pin, GPIO_PIN_SET);
     Oled_Display_String(6, 10, high);
   }
   else if (too_low && is_open)
@@ -379,7 +377,7 @@ void give_alarm()
   }
   else
   {
-    HAL_GPIO_WritePin(GPIOB, Alarm_Pin,GPIO_PIN_RESET );
+    HAL_GPIO_WritePin(GPIOB, Alarm_Pin, GPIO_PIN_RESET);
     Oled_Display_String(6, 10, normal);
   }
 }
@@ -456,11 +454,11 @@ void get_sphygmus()
 {
   double avg_time = average();
   double sp = 1000.0 / avg_time * 60;
-  if(sphygmus_num>MINLISTSIZE)
-	{
-		too_high = (sp > MAXSPHYFMUS);
-		too_low = (sp < MINSPHYFMUS);
-	}
+  if (sphygmus_num > MINLISTSIZE)
+  {
+    too_high = (sp > MAXSPHYFMUS);
+    too_low = (sp < MINSPHYFMUS);
+  }
   sphygmus = sp;
 }
 
@@ -503,9 +501,9 @@ char *to_string(uint32_t num, char *str, int size)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -517,14 +515,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
