@@ -3,16 +3,16 @@
         {
             "name": "sphygmus",
             "includePath": [
-                "d:\\TLProject\\code\\STM32\\sphygmus\\sphygmus\\Core\\Inc",
-                "d:\\TLProject\\code\\STM32\\sphygmus\\sphygmus\\Drivers\\STM32F1xx_HAL_Driver\\Inc",
-                "d:\\TLProject\\code\\STM32\\sphygmus\\sphygmus\\Drivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy",
-                "d:\\TLProject\\code\\STM32\\sphygmus\\sphygmus\\Drivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include",
-                "d:\\TLProject\\code\\STM32\\sphygmus\\sphygmus\\Drivers\\CMSIS\\Include",
+                "d:\\TLProject\\code\\STM32\\sphygmus\\Keil\\Core\\Inc",
+                "d:\\TLProject\\code\\STM32\\sphygmus\\Keil\\Drivers\\STM32F1xx_HAL_Driver\\Inc",
+                "d:\\TLProject\\code\\STM32\\sphygmus\\Keil\\Drivers\\STM32F1xx_HAL_Driver\\Inc\\Legacy",
+                "d:\\TLProject\\code\\STM32\\sphygmus\\Keil\\Drivers\\CMSIS\\Device\\ST\\STM32F1xx\\Include",
+                "d:\\TLProject\\code\\STM32\\sphygmus\\Keil\\Drivers\\CMSIS\\Include",
                 "D:\\Drivers\\Keil5\\ARM\\ARMCC\\include",
                 "D:\\Drivers\\Keil5\\ARM\\ARMCC\\include\\rw",
-                "d:\\TLProject\\code\\STM32\\sphygmus\\sphygmus\\MDK-ARM",
-                "d:\\TLProject\\code\\STM32\\sphygmus\\sphygmus\\Core\\Src",
-                "d:\\TLProject\\code\\STM32\\sphygmus\\sphygmus\\Drivers\\STM32F1xx_HAL_Driver\\Src"
+                "d:\\TLProject\\code\\STM32\\sphygmus\\Keil\\MDK-ARM",
+                "d:\\TLProject\\code\\STM32\\sphygmus\\Keil\\Core\\Src",
+                "d:\\TLProject\\code\\STM32\\sphygmus\\Keil\\Drivers\\STM32F1xx_HAL_Driver\\Src"
             ],
             "defines": [
                 "USE_HAL_DRIVER",

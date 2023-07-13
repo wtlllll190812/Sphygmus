@@ -38,18 +38,26 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MINLISTSIZE 15
-#define MAXLISTSIZE 60
-#define MAXTIME 100000
-#define MAXSPHYFMUS 150
-#define MINSPHYFMUS 50
-#define UART1TIME 20
-#define UART2TIME 2000
-#define ADC1TIME 20
-#define CLOSETIME 5000
-#define MIN_DELTA 333
-#define MAX_DELTA 1000
-#define MAX_DELTA_DELTA 250
+
+// 时间差队列相关
+#define MINLISTSIZE 15 // 最小列表长度 (超过该值视为心率开始稳定，开启报警)
+#define MAXLISTSIZE 60 // 最大列表长度 (维护时间差队列的长度)
+
+// 告警相关
+#define MAXSPHYFMUS 150 // 告警心率上阈值
+#define MINSPHYFMUS 50  // 告警心率下阈值
+
+// 计时器相关
+#define MAXTIME 100000 // 计时器的最大值
+#define UART1TIME 20   // 串口1发送时间间隔
+#define UART2TIME 2000 // 串口2发送时间间隔
+#define ADC1TIME 20    // adc采样时间间隔
+#define CLOSETIME 5000 // 关机时间间隔
+
+// 数据过滤相关
+#define MIN_DELTA 333       // 最小时间间隔
+#define MAX_DELTA 1000      // 最大时间间隔
+#define MAX_DELTA_DELTA 250 // 最大时间间隔变化量
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -60,19 +68,26 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-int too_high;                          // 报警标志
-int too_low;                           // 报警标志
-int is_open = 0;                       // 是否开机
-int is_closed = 0;                     // 是否已经关机
-int heart_beat = 0;                    // 心跳标志
-uint8_t sphygmus_num;                  // 测试到的心跳次数
-uint16_t adc_value;                    // adc采样值
-uint16_t last_value;                   // 上个adc采样值
-uint32_t time;                         // 当前时间
-uint32_t l_time;                       // 上次心跳时间
-double sphygmus;                       // 脉搏
+
+int too_high; // 报警标志
+int too_low;  // 报警标志
+
+int is_open = 0;   // 是否开机
+int is_closed = 0; // 是否已经关机
+
+int heart_beat = 0; // 心跳标志
+
+uint8_t sphygmus_num; // 测试到的心跳次数
+uint16_t adc_value;   // adc采样值
+uint16_t last_value;  // 上个adc采样值
+double sphygmus;      // 脉搏
+
+uint32_t time;   // 当前时间
+uint32_t l_time; // 上次心跳时间
+
 uint32_t delta_time_list[MAXLISTSIZE]; // 脉搏间的时间间隔列表
 UART_HandleTypeDef current_uart;       // 当前使用的串口
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -262,14 +277,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       {
         current_uart = huart1;
         printf("%d %f\r\n", adc_value, sphygmus);
-        // printf("%d,%f\n", adc_value, sphygmus);
       }
 
       // 串口2输出
       if (time % UART2TIME == 0)
       {
         current_uart = huart2;
-        // printf("%f\n", average());
         printf("%f\r\n", sphygmus);
       }
 
@@ -286,17 +299,16 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin & GPIO_PIN_11)
   {
-    if (!is_open && sphygmus_num > 2)
+    if (!is_open && sphygmus_num > 2) // 接收到两次以上的脉搏信号后，系统开机
     {
-      start();
+      start(); // 开机初始化
       l_time = time;
       sphygmus_num = 0;
     }
 
-    // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-    add_delta_time();
-    heart_beat = 1;
-    l_time = time;
+    add_delta_time(); // 向队列添加新的时间间隔
+    heart_beat = 1;   // 心跳标志置1
+    l_time = time;    // 记录上一次脉搏的时间
   }
 }
 
@@ -426,29 +438,6 @@ double average()
   return (float)sum / num;
 }
 
-// 添加时间间隔
-void add_delta_time()
-{
-  uint32_t delta_time = get_delta_time();
-  if (delta_time < MIN_DELTA || delta_time > MAX_DELTA)
-  {
-    return;
-  }
-
-  int delta_delta = delta_time > delta_time_list[MAXLISTSIZE - 1] ? delta_time - delta_time_list[MAXLISTSIZE - 1] : delta_time_list[MAXLISTSIZE - 1] - delta_time;
-  if (sphygmus_num >= MINLISTSIZE && delta_delta > MAX_DELTA_DELTA)
-  {
-    return;
-  }
-
-  for (int i = 0; i < MAXLISTSIZE - 1; i++)
-  {
-    delta_time_list[i] = delta_time_list[i + 1];
-  }
-  delta_time_list[MAXLISTSIZE - 1] = delta_time;
-  sphygmus_num++;
-}
-
 // 获取脉搏
 void get_sphygmus()
 {
@@ -460,6 +449,37 @@ void get_sphygmus()
     too_low = (sp < MINSPHYFMUS);
   }
   sphygmus = sp;
+}
+
+// 添加时间间隔
+void add_delta_time()
+{
+  uint32_t delta_time = get_delta_time(); // 获取时间间隔
+
+  // 过滤掉间隔过短和过长的脉搏
+  if (delta_time < MIN_DELTA || delta_time > MAX_DELTA)
+  {
+    return;
+  }
+
+  // 过滤掉间隔不稳定的脉搏
+  int delta_delta = delta_time > delta_time_list[MAXLISTSIZE - 1] ? delta_time - delta_time_list[MAXLISTSIZE - 1] : delta_time_list[MAXLISTSIZE - 1] - delta_time;
+  if (sphygmus_num >= MINLISTSIZE && delta_delta > MAX_DELTA_DELTA)
+  {
+    return;
+  }
+
+  // 队列元素左移一位
+  for (int i = 0; i < MAXLISTSIZE - 1; i++)
+  {
+    delta_time_list[i] = delta_time_list[i + 1];
+  }
+
+  // 添加新的时间间隔
+  delta_time_list[MAXLISTSIZE - 1] = delta_time;
+
+  // 脉搏数加一
+  sphygmus_num++;
 }
 
 // 数字转换为字符串
