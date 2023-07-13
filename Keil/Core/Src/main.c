@@ -45,7 +45,7 @@
 
 // 告警相关
 #define MAXSPHYFMUS 150 // 告警心率上阈值
-#define MINSPHYFMUS 50  // 告警心率下阈值
+#define MINSPHYFMUS 90  // 告警心率下阈值
 
 // 计时器相关
 #define MAXTIME 100000 // 计时器的最大值
@@ -251,7 +251,7 @@ void SystemClock_Config(void)
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
   last_value = adc_value;
-  adc_value = HAL_ADC_GetValue(&hadc1);
+  adc_value = HAL_ADC_GetValue(&hadc1); // 获取adc值
 }
 
 // 定时器中断
@@ -259,14 +259,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if (htim == (&htim1))
   {
-    time++;
+    time++; // 计时
     if (time > MAXTIME)
     {
       time = 0;
     }
     if (is_open)
     {
-      // 测量一次
+      // adc测量一次
       if (time % ADC1TIME == 0)
       {
         HAL_ADC_Start_IT(&hadc1);
@@ -286,6 +286,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         printf("%f\r\n", sphygmus);
       }
 
+      // 超过设置时间时关机
       if (get_delta_time() > CLOSETIME)
       {
         on_close();
@@ -315,22 +316,27 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 // 初始化
 void init()
 {
+  // 初始化变量
   for (int i = 0; i < MAXLISTSIZE; i++)
   {
     delta_time_list[i] = 0;
   }
-  HAL_ADC_Start_IT(&hadc1);
-  HAL_TIM_Base_Start_IT(&htim1);
-  HAL_ADCEx_Calibration_Start(&hadc1);
+
   current_uart = huart1;
   Oled_Init();
   sphygmus_num = 0;
+
+  // 开启adc和计时器
+  HAL_ADC_Start_IT(&hadc1);
+  HAL_TIM_Base_Start_IT(&htim1);
+  HAL_ADCEx_Calibration_Start(&hadc1);
 }
 
-// 获取时间间隔
+// 计算时间间隔
 uint32_t get_delta_time()
 {
   uint32_t delta_time;
+  // 时间溢出，需要特殊处理
   if (time < l_time)
   {
     delta_time = MAXTIME - l_time + time;
@@ -360,10 +366,15 @@ void display()
   static char buf1[] = {"rate:"};
   static char sphygmus_str[5];
 
+  // 显示心率
   Oled_Display_String(0, 80, buf1);
+
+  // 显示心脏图片
   Oled_Display_Pic(50, 50, 0, 15, heart_small);
   Oled_Display_String(0, 80, buf);
   Oled_Display_String(3, 80, to_string(sphygmus, sphygmus_str, 5));
+
+  // 播放心跳动画
   if (heart_beat)
   {
     heart_beat = 0;
@@ -377,6 +388,8 @@ void give_alarm()
   static char low[] = {"too low "};
   static char high[] = {"too high"};
   static char normal[] = {"        "};
+
+  // 超过最大值或者低于最小值时报警
   if (too_high && is_open)
   {
     HAL_GPIO_WritePin(GPIOB, Alarm_Pin, GPIO_PIN_SET);
@@ -443,6 +456,8 @@ void get_sphygmus()
 {
   double avg_time = average();
   double sp = 1000.0 / avg_time * 60;
+
+  // 判断是否超过报警阈值
   if (sphygmus_num > MINLISTSIZE)
   {
     too_high = (sp > MAXSPHYFMUS);
